@@ -20,7 +20,26 @@ We're developing the Change Evidence Spec alongside Validate so that developers,
 
 **Run your first comparison.**
 
-Try a small retrieval comparison on your CPU. You need Git, Python 3.10 or newer, and a POSIX shell (macOS or Linux; CI covers Linux on Python 3.10 and 3.12 and macOS on 3.12). The demo needs no model weights, GPU or API key. Installation requires network access to download dependencies; the installed demo can run offline. The package is not on PyPI yet, so install from source:
+Try a small retrieval comparison on your CPU. You need Git, Python 3.10 or newer, and a POSIX shell (macOS or Linux; CI covers Linux on Python 3.10 and 3.12 and macOS on 3.12). The demo needs no model weights, GPU or API key. Installation requires network access to download the package; the installed demo can run offline.
+
+```bash
+uvx --prerelease allow remyx-validate demo
+```
+
+Your tests. Your data. Your compute. No account required.
+
+The demo compares two versions of a small support-article retriever on 240 generated queries. A deeper reranking pass retrieves more of the right articles, but exceeds the declared latency limit. The verdict is `FAIL` (guardrail veto). Retrieval accuracy comes from the actual retrieval task; latency and cost in this demo are simulated from operation counts.
+
+`uvx` runs the command in a temporary environment and does not install the CLI. To keep `remyx-validate` on your path, install it into a virtual environment:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --pre remyx-validate
+remyx-validate demo
+```
+
+Or install from source:
 
 ```bash
 git clone https://github.com/remyxai/validate.git
@@ -28,12 +47,10 @@ cd validate
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install .
-remyx-validate demo --dir validate-demo
+remyx-validate demo
 ```
 
-Your tests. Your data. Your compute. No account required.
-
-The demo compares two versions of a small support-article retriever on 240 generated queries. A deeper reranking pass retrieves more of the right articles, but exceeds the declared latency limit. The verdict is `FAIL` (guardrail veto). Retrieval accuracy comes from the actual retrieval task; latency and cost in this demo are simulated from operation counts.
+The demo writes its project to `validate-demo/`. With the CLI installed (or with the `uvx --prerelease allow` prefix on each command):
 
 ```bash
 cd validate-demo
@@ -42,7 +59,7 @@ remyx-validate verify
 remyx-validate record --decision revise --reason "Latency over the declared limit"
 ```
 
-The report and machine-readable evidence are saved under `.validate/runs/`. Try `remyx-validate demo --all --dir validate-fixtures` from the repository root to see examples of all five verdicts.
+The report and machine-readable evidence are saved under `.validate/runs/`. Try `remyx-validate demo --all --dir validate-fixtures` to see examples of all five verdicts.
 
 ## Evaluate a change in your repository
 
