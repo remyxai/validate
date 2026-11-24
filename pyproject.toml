@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "remyx-validate"
+version = "0.1.0a0"
+description = "Open-source evaluation harness for AI engineering. Compare changes, measure tradeoffs and capture evidence."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+authors = [{name = "Remyx AI"}]
+keywords = ["evaluation", "ai-engineering", "ab-testing", "llm", "mlops", "evidence"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Testing",
+]
+dependencies = ["PyYAML>=6", "jsonschema>=4.18"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7"]
+
+[project.urls]
+Repository = "https://github.com/remyxai/validate"
+Issues = "https://github.com/remyxai/validate/issues"
+Specification = "https://github.com/remyxai/validate/blob/main/spec/v0.1/SPEC.md"
+
+[project.scripts]
+remyx-validate = "remyx_validate.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+remyx_validate = ["schemas/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,424 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remyx.ai/spec/change-evidence/v0.1/declaration.schema.json",
+  "title": "Change Evidence Spec v0.1: declaration (impact.yaml)",
+  "type": "object",
+  "required": [
+    "spec_version",
+    "change",
+    "run",
+    "criteria"
+  ],
+  "additionalProperties": false,
+  "patternProperties": {
+    "^x-": {}
+  },
+  "properties": {
+    "spec_version": {
+      "const": "0.1"
+    },
+    "objective": {
+      "type": "string"
+    },
+    "change": {
+      "type": "object",
+      "required": [
+        "repo",
+        "baseline",
+        "candidate"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "family": {
+          "type": "string"
+        },
+        "hypothesis": {
+          "type": "string"
+        },
+        "repo": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pr": {
+          "type": "string"
+        },
+        "baseline": {
+          "$ref": "#/$defs/ref"
+        },
+        "candidate": {
+          "$ref": "#/$defs/ref"
+        }
+      }
+    },
+    "harness": {
+      "type": "object",
+      "required": [
+        "path"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "setup": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "run": {
+      "type": "object",
+      "required": [
+        "command"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 5
+        }
+      }
+    },
+    "preflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "timeout_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      },
+      "required": [
+        "command"
+      ]
+    },
+    "arms": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "$ref": "#/$defs/arm"
+        },
+        "candidate": {
+          "$ref": "#/$defs/arm"
+        }
+      }
+    },
+    "method": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "unit": {
+          "enum": [
+            "example",
+            "seed"
+          ]
+        },
+        "seeds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer"
+          }
+        },
+        "confidence": {
+          "type": "number",
+          "exclusiveMinimum": 0.5,
+          "exclusiveMaximum": 1
+        },
+        "uncertainty": {
+          "enum": [
+            "interval",
+            "point"
+          ]
+        },
+        "max_missing_rate": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        }
+      }
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/criterion"
+      }
+    },
+    "validity": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "activation": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "metric"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "expect": {
+                "enum": [
+                  "differs"
+                ]
+              }
+            }
+          }
+        },
+        "held_constant": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "baseline_expect": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "metric",
+              "value",
+              "tolerance"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "metric": {
+                "type": "string"
+              },
+              "value": {
+                "type": "number"
+              },
+              "tolerance": {
+                "type": "number",
+                "minimum": 0
+              },
+              "source": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "backend": {
+          "enum": [
+            "local",
+            "docker"
+          ]
+        },
+        "trust": {
+          "enum": [
+            "trusted",
+            "untrusted",
+            "review-required"
+          ]
+        },
+        "image": {
+          "type": "string"
+        },
+        "network": {
+          "enum": [
+            "none",
+            "setup-only",
+            "full"
+          ]
+        },
+        "pass_env": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          }
+        },
+        "limits": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "cpus": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "memory": {
+              "type": "string"
+            },
+            "gpus": {
+              "type": "string"
+            }
+          }
+        },
+        "acknowledge_untrusted_network": {
+          "type": "boolean",
+          "description": "Explicit, reviewed exception: allow network for untrusted code."
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "max_wall_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "max_cost_usd": {
+          "type": "number",
+          "minimum": 0
+        }
+      }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "identity": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "expected_units": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of distinct units the harness is expected to report. Lets coverage notice a unit missing from both arms."
+        }
+      }
+    }
+  },
+  "$defs": {
+    "ref": {
+      "type": "object",
+      "required": [
+        "ref"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "arm": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "env": {
+          "type": "object",
+          "propertyNames": {
+            "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        }
+      }
+    },
+    "criterion": {
+      "type": "object",
+      "required": [
+        "id",
+        "metric",
+        "role",
+        "direction"
+      ],
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_.-]+$"
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "enum": [
+            "target",
+            "guardrail",
+            "info"
+          ]
+        },
+        "direction": {
+          "enum": [
+            "higher",
+            "lower"
+          ]
+        },
+        "aggregate": {
+          "type": "string",
+          "pattern": "^(mean|sum|min|max|median|p[0-9]{1,2}(\\.[0-9]+)?)$"
+        },
+        "unit": {
+          "type": "string"
+        },
+        "min_improvement": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_regression": {
+          "type": "number",
+          "minimum": 0
+        },
+        "relative": {
+          "type": "boolean"
+        },
+        "max": {
+          "type": "number"
+        },
+        "min": {
+          "type": "number"
+        },
+        "pairing": {
+          "enum": [
+            "seed",
+            "example"
+          ],
+          "description": "Overrides method.unit for this criterion."
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remyx.ai/spec/change-evidence/v0.1/observation.schema.json",
+  "title": "Change Evidence Spec v0.1: observation (one line of observations.jsonl)",
+  "type": "object",
+  "required": ["arm", "seed", "unit", "metric", "value", "attempt_id"],
+  "patternProperties": {"^x-": {}},
+  "properties": {
+    "arm": {"enum": ["baseline", "candidate"]},
+    "seed": {"type": "integer"},
+    "unit": {"type": ["string", "null"], "description": "Independent sampling unit id. null marks a run-level value."},
+    "slice": {"type": ["string", "null"]},
+    "metric": {"type": "string"},
+    "value": {"type": "number"},
+    "attempt_id": {"type": "string"},
+    "source": {"enum": ["results.json", "METRICS_JSON", "stdout_json"]}
+  }
+}

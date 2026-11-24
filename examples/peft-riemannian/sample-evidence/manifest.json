@@ -1,0 +1,183 @@
+{
+  "approval": {
+    "approved_at": "2026-11-24T19:40:36Z",
+    "approved_by": "salma-remyx <<EMAIL>>",
+    "change_id": "chg_8795830f595b6b4e",
+    "declaration_hash": "bcd7a9283b7e9222fd4cba52eb8c0c41a48f87dd7a73d7b7e08b5dc9a2be9636",
+    "plan_digest": "67343350a913f9bf95e57c081f27afb0fd1e989240eb2700b7c7a9ebdf8eab24"
+  },
+  "plan": {
+    "access": {
+      "env_names": [
+        "OPTIMIZER"
+      ],
+      "filesystem": "everything your user can read and write",
+      "host_env_names": [
+        "PATH",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+        "USER",
+        "SHELL"
+      ],
+      "network": {
+        "run": "unrestricted",
+        "setup": "unrestricted"
+      }
+    },
+    "change": {
+      "baseline": {
+        "ref": "3116c96b5d870851e8477eb99dfcf8471bac0e72",
+        "sha": "3116c96b5d870851e8477eb99dfcf8471bac0e72"
+      },
+      "candidate": {
+        "ref": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7",
+        "sha": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7"
+      },
+      "change_id": "chg_8795830f595b6b4e",
+      "repo": "https://github.com/huggingface/peft"
+    },
+    "declaration": {
+      "arms": {
+        "baseline": {
+          "env": {
+            "OPTIMIZER": "adamw"
+          }
+        },
+        "candidate": {
+          "env": {
+            "OPTIMIZER": "riemannian"
+          }
+        }
+      },
+      "budget": {
+        "max_wall_s": 3600
+      },
+      "change": {
+        "baseline": {
+          "ref": "3116c96b5d870851e8477eb99dfcf8471bac0e72"
+        },
+        "candidate": {
+          "ref": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7"
+        },
+        "family": "optimizer",
+        "hypothesis": "With identical init, data and step count, r x r preconditioning of the LoRA gradients reaches a lower eval loss than plain AdamW.",
+        "pr": "https://github.com/huggingface/peft/pull/3382",
+        "repo": "https://github.com/huggingface/peft"
+      },
+      "criteria": [
+        {
+          "aggregate": "mean",
+          "direction": "lower",
+          "id": "final_eval_loss",
+          "metric": "final_eval_loss",
+          "min_improvement": 0,
+          "relative": false,
+          "role": "target"
+        },
+        {
+          "aggregate": "mean",
+          "direction": "higher",
+          "id": "throughput",
+          "metric": "steps_per_s",
+          "relative": false,
+          "role": "info"
+        }
+      ],
+      "data": {
+        "description": "Synthetic regression against a rank-4 perturbed two-layer MLP; generated from the seed, no external data.",
+        "identity": "synthetic-lora-teacher-student-v1"
+      },
+      "execution": {
+        "acknowledge_untrusted_network": false,
+        "backend": "local",
+        "image": "python:3.12-slim",
+        "limits": {},
+        "network": "full",
+        "pass_env": [],
+        "trust": "trusted"
+      },
+      "harness": {
+        "path": "./harness"
+      },
+      "method": {
+        "confidence": 0.95,
+        "max_missing_rate": 0.0,
+        "seeds": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "uncertainty": "interval",
+        "unit": "seed"
+      },
+      "objective": "Decide whether the Riemannian-preconditioned optimizer trains LoRA to a lower loss than AdamW at the same step budget.",
+      "preflight": {
+        "command": "{env}/venv/bin/python {harness}/bench.py",
+        "timeout_s": 300
+      },
+      "run": {
+        "command": "{env}/venv/bin/python {harness}/bench.py",
+        "retries": 0,
+        "timeout_s": 900
+      },
+      "setup": [
+        "uv venv -q --python 3.12 {env}/venv",
+        "uv pip install -q --python {env}/venv/bin/python torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu",
+        "uv pip install -q --python {env}/venv/bin/python -e . transformers==5.24.1 accelerate==1.16.0 numpy==2.5.5"
+      ],
+      "spec_version": "0.1",
+      "validity": {
+        "activation": [
+          {
+            "metric": "optimizer_preconditioned"
+          }
+        ],
+        "baseline_expect": [],
+        "held_constant": [
+          "num_trainable_params",
+          "train_steps",
+          "initial_eval_loss"
+        ]
+      }
+    },
+    "declaration_file": "impact.yaml",
+    "declaration_hash": "bcd7a9283b7e9222fd4cba52eb8c0c41a48f87dd7a73d7b7e08b5dc9a2be9636",
+    "env_keys": {
+      "baseline": "9645adf18fdeebd9ef8c459cc9a870bd3c012c47d18ca58c96efbf2983ba500d",
+      "candidate": "eb17ad078f9d7b9a953d73d179965f6fed0b3886fe77374b52b4a635bf7609c5"
+    },
+    "harness": {
+      "digest": "be85dd9fa89e6fc91c59688018724aacd2a905728f3d18099d734293374cf414",
+      "file_count": 1,
+      "path": "./harness"
+    },
+    "image_id": null,
+    "kind": "plan",
+    "plan_digest": "67343350a913f9bf95e57c081f27afb0fd1e989240eb2700b7c7a9ebdf8eab24",
+    "reproducibility": [
+      "Packages installed by `setup` are resolved at build time; the tool does not lock them. Pin versions in the setup commands or a lockfile for a repeatable environment."
+    ],
+    "runner_version": "0.1.0a0",
+    "scope": {
+      "attempts_max": 10,
+      "attempts_min": 10,
+      "cost_cap_usd": null,
+      "cost_estimate_usd": null,
+      "cost_note": "unknown: the runner cannot price your compute or provider calls. A cost cap is a threshold on what the harness reports after each attempt, not a spending limit.",
+      "network": "local subprocess: unrestricted (trusted code only)",
+      "outputs": ".validate/runs/<run_id>/ under the project directory; nothing is uploaded",
+      "per_attempt_timeout_s": 900,
+      "secrets": "none passed",
+      "wall_cap_s": 3600,
+      "wall_note": "the wall cap covers setup, preflight and attempts. Fetching the repository while planning is outside it."
+    },
+    "spec_hash": "34e2e3521b71f49e3d338aa71461690693928b3dc285f4ce607892d0165cab7d",
+    "spec_version": "0.1",
+    "warnings": []
+  },
+  "run_id": "run_20261124T194037Z_6a6f83"
+}

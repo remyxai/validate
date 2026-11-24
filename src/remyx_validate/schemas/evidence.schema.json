@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remyx.ai/spec/change-evidence/v0.1/evidence.schema.json",
+  "title": "Change Evidence Spec v0.1: evidence (evidence.json)",
+  "type": "object",
+  "required": ["spec_version", "kind", "change", "declaration", "execution", "observations", "comparison", "provenance"],
+  "patternProperties": {"^x-": {}},
+  "properties": {
+    "spec_version": {"const": "0.1"},
+    "kind": {"const": "evidence"},
+    "change": {
+      "type": "object",
+      "required": ["change_id", "repo", "baseline", "candidate"],
+      "properties": {
+        "change_id": {"type": "string", "pattern": "^chg_[0-9a-f]{16}$"},
+        "repo": {"type": "string"},
+        "baseline": {"$ref": "#/$defs/resolved_ref"},
+        "candidate": {"$ref": "#/$defs/resolved_ref"}
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "required": ["declaration_hash", "resolved"],
+      "properties": {
+        "declaration_hash": {"$ref": "#/$defs/sha256"},
+        "resolved": {"type": "object"}
+      }
+    },
+    "execution": {
+      "type": "object",
+      "required": ["run_id", "spec_hash", "plan_digest", "status", "attempts"],
+      "properties": {
+        "run_id": {"type": "string", "pattern": "^run_"},
+        "spec_hash": {"$ref": "#/$defs/sha256"},
+        "plan_digest": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["COMPLETED", "FAILED", "TIMEOUT", "CANCELLED", "BUDGET_EXCEEDED", "PREFLIGHT_FAILED"]},
+        "attempts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["attempt_id", "arm", "seed", "try", "status"],
+            "properties": {
+              "attempt_id": {"type": "string"},
+              "arm": {"enum": ["baseline", "candidate"]},
+              "seed": {"type": "integer"},
+              "try": {"type": "integer", "minimum": 1},
+              "status": {"enum": ["ok", "failed", "timeout", "cancelled", "no_results", "invalid_results"]},
+              "exit_code": {"type": ["integer", "null"]},
+              "duration_s": {"type": "number"}
+            }
+          }
+        }
+      }
+    },
+    "observations": {
+      "type": "object",
+      "required": ["path", "count", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "count": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["verdict", "validity", "criteria", "reasons", "limitations"],
+      "properties": {
+        "verdict": {"enum": ["PASS", "WARN", "FAIL", "NO_SIGNAL", "INCOMPLETE"]},
+        "validity": {
+          "type": "object",
+          "required": ["status", "checks"],
+          "properties": {
+            "status": {"enum": ["VALID", "INVALID", "NOT_ASSESSED"]},
+            "checks": {"type": "array"}
+          }
+        },
+        "criteria": {"type": "array"},
+        "reasons": {"type": "array", "items": {"type": "string"}},
+        "limitations": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "cost": {"type": "object"},
+    "provenance": {
+      "type": "object",
+      "required": ["producer", "trust_level"],
+      "properties": {
+        "producer": {"type": "object"},
+        "trust_level": {"enum": ["self_reported_local"]}
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "resolved_ref": {
+      "type": "object",
+      "required": ["ref", "sha"],
+      "properties": {
+        "ref": {"type": "string"},
+        "sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+      }
+    }
+  }
+}

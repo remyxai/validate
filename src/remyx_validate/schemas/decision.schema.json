@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remyx.ai/spec/change-evidence/v0.1/decision.schema.json",
+  "title": "Change Evidence Spec v0.1: decision",
+  "type": "object",
+  "required": ["spec_version", "kind", "decision_id", "decision", "reason", "author", "recorded_at", "evidence"],
+  "patternProperties": {"^x-": {}},
+  "properties": {
+    "spec_version": {"const": "0.1"},
+    "kind": {"const": "decision"},
+    "decision_id": {"type": "string", "pattern": "^dec_"},
+    "decision": {"enum": ["ship", "revise", "hold", "drop"]},
+    "reason": {"type": "string", "minLength": 1},
+    "author": {"type": "string", "minLength": 1},
+    "recorded_at": {"type": "string"},
+    "supersedes": {"type": ["string", "null"]},
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": ["run_id", "bundle_digest", "change_id", "declaration_hash", "verdict"],
+        "properties": {
+          "run_id": {"type": "string"},
+          "bundle_digest": {"type": "string"},
+          "change_id": {"type": "string"},
+          "declaration_hash": {"type": "string"},
+          "verdict": {"type": "string"}
+        }
+      }
+    }
+  }
+}

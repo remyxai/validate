@@ -1,0 +1,15 @@
+{
+  "algorithm": "sha256",
+  "bundle_digest": "f8f6777cbcf1a12d9308eae3f6baf6fb56373b5b7d2663329b67032551c52a4a",
+  "derived_from_bundle_digest": "706a2a50ef64abf65c90c8d4242feeac845decd1c732e7206e96e7a51630037a",
+  "files": {
+    "declaration.json": "2d03868ee6574aec38372946e7b5a0cfd12586e88708021c76a0399e45ab1d59",
+    "evidence.json": "911c14ab0fef8674d9ab024485980859a32786ca53496088fbe077bac0e14bf0",
+    "manifest.json": "aa302dca7fd3b668494140f002e4822968a6a096efb8f8fc94eb0aa84f0610fb",
+    "observations.jsonl": "5926de27cb401724543f39bd1329140b2a788c9f013a270c01da34df5922c897",
+    "report.md": "84c75b0476069b09f057ae611d93e92d597b5d61de5ef9571d78707ae1b41fe7"
+  },
+  "logs_included": false,
+  "redacted": true,
+  "redaction_policy": "public-v2: allowlisted files; local paths, email addresses and credential-shaped strings replaced; logs and harness dropped unless asked"
+}

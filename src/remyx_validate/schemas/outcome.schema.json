@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://remyx.ai/spec/change-evidence/v0.1/outcome.schema.json",
+  "title": "Change Evidence Spec v0.1: deployment and outcome (draft, not produced by the runner)",
+  "type": "object",
+  "required": ["spec_version", "kind", "change_id", "source"],
+  "patternProperties": {"^x-": {}},
+  "properties": {
+    "spec_version": {"const": "0.1"},
+    "kind": {"enum": ["deployment", "outcome"]},
+    "change_id": {"type": "string"},
+    "decision_id": {"type": ["string", "null"]},
+    "deployment_id": {"type": "string"},
+    "exposure": {
+      "type": "object",
+      "properties": {
+        "start": {"type": "string"},
+        "end": {"type": ["string", "null"]},
+        "treatment": {"type": "string"},
+        "control": {"type": ["string", "null"]}
+      }
+    },
+    "kpi": {"type": "string"},
+    "effect": {"type": ["number", "null"]},
+    "interval": {"type": ["array", "null"], "items": {"type": "number"}, "minItems": 2, "maxItems": 2},
+    "method": {"enum": ["ab_test", "before_after", "observational", "other"]},
+    "confounders": {"type": "array", "items": {"type": "string"}},
+    "source": {"type": "string"},
+    "consent": {"enum": ["local_only", "private_workspace", "public", "research"]}
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "arms": {
+    "baseline": {
+      "env": {
+        "OPTIMIZER": "adamw"
+      }
+    },
+    "candidate": {
+      "env": {
+        "OPTIMIZER": "riemannian"
+      }
+    }
+  },
+  "budget": {
+    "max_wall_s": 3600
+  },
+  "change": {
+    "baseline": {
+      "ref": "3116c96b5d870851e8477eb99dfcf8471bac0e72"
+    },
+    "candidate": {
+      "ref": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7"
+    },
+    "family": "optimizer",
+    "hypothesis": "With identical init, data and step count, r x r preconditioning of the LoRA gradients reaches a lower eval loss than plain AdamW.",
+    "pr": "https://github.com/huggingface/peft/pull/3382",
+    "repo": "https://github.com/huggingface/peft"
+  },
+  "criteria": [
+    {
+      "aggregate": "mean",
+      "direction": "lower",
+      "id": "final_eval_loss",
+      "metric": "final_eval_loss",
+      "min_improvement": 0,
+      "relative": false,
+      "role": "target"
+    },
+    {
+      "aggregate": "mean",
+      "direction": "higher",
+      "id": "throughput",
+      "metric": "steps_per_s",
+      "relative": false,
+      "role": "info"
+    }
+  ],
+  "data": {
+    "description": "Synthetic regression against a rank-4 perturbed two-layer MLP; generated from the seed, no external data.",
+    "identity": "synthetic-lora-teacher-student-v1"
+  },
+  "execution": {
+    "acknowledge_untrusted_network": false,
+    "backend": "local",
+    "image": "python:3.12-slim",
+    "limits": {},
+    "network": "full",
+    "pass_env": [],
+    "trust": "trusted"
+  },
+  "harness": {
+    "path": "./harness"
+  },
+  "method": {
+    "confidence": 0.95,
+    "max_missing_rate": 0.0,
+    "seeds": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ],
+    "uncertainty": "interval",
+    "unit": "seed"
+  },
+  "objective": "Decide whether the Riemannian-preconditioned optimizer trains LoRA to a lower loss than AdamW at the same step budget.",
+  "preflight": {
+    "command": "{env}/venv/bin/python {harness}/bench.py",
+    "timeout_s": 300
+  },
+  "run": {
+    "command": "{env}/venv/bin/python {harness}/bench.py",
+    "retries": 0,
+    "timeout_s": 900
+  },
+  "setup": [
+    "uv venv -q --python 3.12 {env}/venv",
+    "uv pip install -q --python {env}/venv/bin/python torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu",
+    "uv pip install -q --python {env}/venv/bin/python -e . transformers==5.24.1 accelerate==1.16.0 numpy==2.5.5"
+  ],
+  "spec_version": "0.1",
+  "validity": {
+    "activation": [
+      {
+        "metric": "optimizer_preconditioned"
+      }
+    ],
+    "baseline_expect": [],
+    "held_constant": [
+      "num_trainable_params",
+      "train_steps",
+      "initial_eval_loss"
+    ]
+  }
+}

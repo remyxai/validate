@@ -1,0 +1,75 @@
+name: ci
+
+# Runs on demand and on pushes to main. Add `pull_request:` once you want it on
+# every PR (it uses no secrets and a read-only token).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: ${{ matrix.os }} / py${{ matrix.python }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {os: ubuntu-latest, python: "3.10"}
+          - {os: ubuntu-latest, python: "3.12"}
+          - {os: macos-latest, python: "3.12"}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install (not editable)
+        run: python -m pip install '.[dev]'
+      - name: Tests
+        # -rs prints every skipped test and why (docker tests skip where there is no daemon)
+        run: python -m pytest -q -rs
+      - name: Demo and fixtures from the installed package
+        run: |
+          cd "$RUNNER_TEMP"
+          remyx-validate --version
+          remyx-validate demo --dir demo-clean --json > demo.json
+          python -c "import json; d=json.load(open('demo.json')); assert d['scenarios'][0]['verdict']=='FAIL', d"
+          remyx-validate demo --all --dir fixtures-clean
+          cd demo-clean
+          remyx-validate verify
+          remyx-validate record --decision revise --reason "Latency over the declared limit"
+          remyx-validate export --public --output evidence.tar.gz
+          remyx-validate verify evidence.tar.gz
+      - name: Verify the recorded PEFT bundle
+        run: remyx-validate verify examples/peft-riemannian/sample-evidence
+
+  wheel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build, then install the wheel into a fresh environment
+        run: |
+          python -m pip install build
+          python -m build
+          python -m venv "$RUNNER_TEMP/fresh"
+          "$RUNNER_TEMP/fresh/bin/pip" install dist/*.whl
+          cd "$RUNNER_TEMP"
+          fresh/bin/remyx-validate demo --all --dir wheel-fixtures
+          fresh/bin/python -c "from remyx_validate import declaration as d; [d.load_schema(n) for n in ('declaration','evidence','observation','decision','outcome')]"
+          fresh/bin/pip uninstall -y remyx-validate
