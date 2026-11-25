@@ -12,9 +12,16 @@ Shapes:
 
 Only finite numbers are kept. Booleans become 0/1. Anything else is listed in
 ``ignored`` so a dropped value is visible.
+
+A top-level ``"fingerprints": {name: text}`` names what an attempt worked on:
+a hash of its inputs, a dataset revision, a prompt set id. Each becomes the
+run-level metric ``fingerprint.<name>``, a 48-bit number derived from the
+text, so it can be listed under ``validity.held_constant`` and compared
+between arms and between repeated runs like any other control.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -64,8 +71,18 @@ def _parse_doc(doc, source: str) -> dict:
     if not isinstance(doc, dict):
         raise ResultsError("results must be a JSON object")
     ignored: list = []
-    if "observations" in doc or "metrics" in doc:
+    if "observations" in doc or "metrics" in doc or "fingerprints" in doc:
         run_metrics = _metrics(doc.get("metrics") or {}, ignored, "metrics")
+        prints = doc.get("fingerprints") or {}
+        if not isinstance(prints, dict):
+            raise ResultsError("fingerprints must be an object")
+        for key, value in prints.items():
+            if isinstance(value, bool) or not isinstance(value, (str, int)):
+                raise ResultsError(f"fingerprints.{key}: must be text or an integer")
+            name = f"fingerprint.{key}"
+            if name in run_metrics:
+                raise ResultsError(f"fingerprints.{key}: clashes with a metric of the same name")
+            run_metrics[name] = float(int(hashlib.sha256(str(value).encode("utf-8")).hexdigest()[:12], 16))
         observations = []
         rows = doc.get("observations") or []
         if not isinstance(rows, list):

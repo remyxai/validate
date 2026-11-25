@@ -14,7 +14,7 @@ everything else is JSON.
 | Change | inside `evidence.json` | `change_id` |
 | Declaration | `impact.yaml`, resolved copy in `declaration.json` | `declaration_hash` |
 | Execution | inside `evidence.json`, full plan in `manifest.json` | `spec_hash`, `plan_digest`, `run_id`, `attempt_id` |
-| Observation | one line of `observations.jsonl` | (arm, seed, unit, metric) |
+| Observation | one line of `observations.jsonl` | (arm, seed, unit, metric), plus (replicate, sequence) under a measurement protocol |
 | Comparison | inside `evidence.json` | derived |
 | Decision | one line of `decisions.jsonl` | `decision_id` |
 | Deployment / outcome | `outcome.schema.json` | draft only; no producer yet |
@@ -37,12 +37,14 @@ and a spelled-out default are the same document.
   threshold edit does not change it.
 - `spec_hash`: resolved shas, harness digest, setup, command, arm
   environments, seeds, execution settings and budget. It answers "what gets
-  executed". A threshold edit does not change it.
+  executed". A threshold edit does not change it. Under a measurement
+  protocol it also covers the protocol and the run schedule.
 - `change_id`: repo identity, baseline sha, candidate sha, arm environments.
   A new candidate commit is a new change under the same declaration.
 - `plan_digest`: the full resolved plan. This is what a person approves.
 - `run_id`: one per execution of an approved plan.
-- `attempt_id`: one per (arm, seed, try). A retry is a new attempt.
+- `attempt_id`: one per (arm, seed, try), or per (arm, seed, replicate,
+  sequence, try) under a measurement protocol. A retry is a new attempt.
 - `bundle_digest`: sha256 over the bundle's file list and file digests.
 
 ## Declaration
@@ -101,6 +103,73 @@ in:
 `method.max_missing_rate` (default 0) is the share of expected measurements
 that may be unpaired.
 
+## Measurement protocol
+
+A criterion is a timing criterion when it says `performance: true`, or when
+it does not say and its metric name or unit reads as a timing (the producer
+records the inference as `performance: true` in the resolved declaration,
+with the extension flag `x-performance-inferred`). `performance: false` opts
+out. A declaration with a timing criterion and no `measurement` block gets
+the default block: `design: crossover`, one replicate, `schedule_seed: 0`,
+`cache.profile: cold`.
+
+A declaration with no timing criterion and no `measurement` block has the
+v0.1.0a0 behaviour and the same hashes: one pass per seed, order alternating
+by the seed's position, no cache reset. Evidence produced that way is not
+order-controlled, and a producer must say so.
+
+With a `measurement` block, declared or defaulted:
+
+- **Schedule.** A is the baseline, B the candidate. A block is one (seed,
+  replicate). `design: crossover` (default) runs both sequences, AB and BA,
+  in every block: four measured attempts. `design: single` runs one sequence
+  per block. Block order and which sequence leads are drawn from
+  `schedule_seed` with SHA-256 in counter mode and are balanced across
+  blocks. Workload seeds are sorted first and never feed the scheduler. The
+  schedule is part of the plan and of `spec_hash`.
+- **Slots.** Each attempt records `seed`, `replicate`, `block`, `sequence`,
+  `period` (its position in the sequence), `planned_ordinal` and `ordinal`
+  (the order it ran in). Observations carry `replicate`, `sequence` and
+  `period`.
+- **Retries.** The unit retried is the sequence. If either arm fails, both
+  are run again. Attempts from the abandoned try stay in the ledger with
+  `discarded: true` and contribute no observations.
+- **Cache isolation.** Before every measured attempt the producer creates a
+  new, empty directory it owns and points the mutable cache locations at it.
+  `cache.profile: warm` then runs the command `warmup_runs` times untimed for
+  that arm. `reset_hooks` run before every measured attempt. A failed reset,
+  hook or warm-up ends the attempt with status `reset_failed` or
+  `warmup_failed` before anything is measured. The protocol record in
+  `execution.protocol` lists what was isolated and what was not controlled.
+- **Nesting.** Runs of a seed are averaged within each independent unit
+  before any estimate. A unit absent from any of its runs is excluded and
+  counts toward the missing rate. Controls and witnesses are judged in every
+  measured pair, and a held-constant metric must also be equal across all
+  runs of the same seed.
+- **Order effect.** For a criterion with `performance: true` under the
+  crossover, let dAB and dBA be candidate minus baseline in each sequence.
+  The order effect is dAB − dBA, estimated over units with the criterion's
+  aggregate (t interval for `mean`, unit bootstrap otherwise). A gating
+  performance criterion must declare `order_tolerance`. Interval inside
+  ±tolerance: judged normally. Interval entirely outside: the criterion's
+  status is `unassessed` and the check `order_bias` is recorded as failed.
+  Otherwise, or with no interval: the criterion is undecided. Under
+  `uncertainty: point` the point estimate decides. The first-position and
+  second-position contrasts and the drift between a block's two sequences
+  are reported and not gated.
+- **Fingerprints.** A result may carry `"fingerprints": {name: text}`. Each
+  becomes the run-level metric `fingerprint.<name>`: the first 48 bits of the
+  SHA-256 of the text, as a number.
+- **Conditions.** `execution.protocol.host` and each attempt's `conditions`
+  are self-reported readings. Nothing is computed from them.
+- **Exploratory.** Under `design: single`, or when `cache.uncontrolled` lists
+  shared state, a gating performance criterion that would be met or clear is
+  reported as `exploratory` instead.
+- A gating timing criterion under the crossover without `order_tolerance`
+  is invalid.
+
+See [docs/MEASUREMENT.md](../../docs/MEASUREMENT.md) for guidance.
+
 ## Estimators
 
 - `mean`: Student t interval on per-unit paired differences.
@@ -127,9 +196,12 @@ First match wins:
    measurements are unpaired than `method.max_missing_rate` allows.
 4. NO_SIGNAL: an activation witness is identical across arms on any seed, or
    the arms are identical on every gating metric and no witness is declared.
-5. FAIL: a guardrail breached or a target not met.
-6. WARN: a gating criterion undecided.
-7. PASS.
+5. FAIL: a guardrail breached or a target not met. An `unassessed` criterion
+   never causes a FAIL.
+6. NO_SIGNAL: a gating performance criterion is `unassessed` because its
+   order effect is outside its tolerance.
+7. WARN: a gating criterion undecided or exploratory.
+8. PASS.
 
 Identical arms with a passing activation witness is a measured zero on the
 declared data. It is judged like any other result and carries the reason
@@ -153,7 +225,12 @@ A consumer holding a bundle can check, without running anything:
 - that the declaration is identical in `manifest.json`, `declaration.json`
   and `evidence.json`, and hashes to `declaration_hash`
 - that `spec_hash`, `change_id` and each `env_key` recompute from the plan
-- that every observation belongs to a successful attempt with its arm and seed
+- that every observation belongs to a counted, successful attempt with its
+  arm, seed and run order
+- under a measurement protocol: that the recorded schedule is the one the
+  declaration derives, that every counted attempt is one of its slots and
+  started from a clean cache, and that the two arms of a kept sequence ran
+  back to back
 - that the full comparison (estimates, intervals, counts, statuses, checks,
   reasons, limitations, verdict) recomputes from the observations
 - that `report.md` is what `evidence.json` renders to

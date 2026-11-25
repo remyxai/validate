@@ -73,9 +73,9 @@ def render_plan(plan: dict, approved, drift=None) -> str:
         f"confidence: {d['method']['confidence']}   rule: {d['method']['uncertainty']}",
         f"  attempts    {sc['attempts_min']} (up to {sc['attempts_max']} with retries), "
         f"{sc['per_attempt_timeout_s']}s each",
-        "",
-        "  criteria",
     ]
+    lines += _protocol_lines(plan)
+    lines += ["", "  criteria"]
     for c in d["criteria"]:
         bits = []
         if c["role"] == "target":
@@ -85,6 +85,10 @@ def render_plan(plan: dict, approved, drift=None) -> str:
                 bits.append(f"candidate {word} {c[key]}")
         if "max_regression" in c:
             bits.append(f"regress by <= {c['max_regression']}" + (" (relative)" if c["relative"] else ""))
+        if c.get("performance"):
+            bits.append("timing" + (" (inferred)" if c.get("x-performance-inferred") else "")
+                        + (f", order tolerance ±{c['order_tolerance']}"
+                           if "order_tolerance" in c else ""))
         lines.append(f"    {c['role']:<9} {c['id']}: {c['aggregate']} of `{c['metric']}`, "
                      f"{c['direction']} is better" + (", " + ", ".join(bits) if bits else ""))
     v = d["validity"]
@@ -120,6 +124,35 @@ def render_plan(plan: dict, approved, drift=None) -> str:
         for row in drift[:30]:
             lines.append(f"    {row['field']}: {_short(row['approved'])} -> {_short(row['current'])}")
     return "\n".join(lines)
+
+
+def _protocol_lines(plan: dict) -> list:
+    d, sc = plan["declaration"], plan["scope"]
+    m = d.get("measurement")
+    if not m:
+        return ["  order       not controlled: one order per seed, alternating by seed position; "
+                "caches not reset",
+                "              (no criterion is a timing metric; declare `measurement:` to "
+                "control it anyway)"]
+    cache = m["cache"]
+    lines = [
+        f"  order       {m['design']}, {m['replicates']} replicate(s), scheduler seed "
+        f"{m['schedule_seed']}: {sc['attempts_note']}",
+        f"  caches      {cache['profile']} profile; a new empty cache directory before every "
+        "measured attempt"
+        + (f"; {cache['warmup_runs']} untimed warm-up run(s) per attempt "
+           f"({sc['untimed_warmup_runs_min']} in total)" if cache["profile"] == "warm" else "")
+        + f"; downloaded model assets {cache['assets']}",
+    ]
+    if m["reset_hooks"]:
+        lines.append("  reset       before every measured attempt: "
+                     + "; ".join(f"{h['id']}: {h['command']}" for h in m["reset_hooks"]))
+    lines.append("  schedule    " + "  ".join(
+        f"{s['ordinal']}:{s['arm'][0]}/s{s['seed']}/r{s['replicate']}/{s['sequence']}"
+        for s in plan["schedule"][:24])
+        + (f"  … {len(plan['schedule']) - 24} more" if len(plan["schedule"]) > 24 else ""))
+    lines.append("              (b = baseline, c = candidate; the full schedule is in the saved plan)")
+    return lines
 
 
 def _files_line(fs) -> str:
@@ -244,6 +277,24 @@ criteria:
   #   direction: lower
   #   max_regression: 0.10
   #   relative: true
+  #   order_tolerance: 0.02  # run-order difference you would call unimportant (relative here)
+  #   # A metric whose name or unit reads as a timing (latency, throughput, _ms,
+  #   # _s, per_s, ...) is compared in both run orders by default. Say
+  #   # `performance: false` if it is not a timing, `performance: true` if it is
+  #   # one the name does not give away.
+
+# Applied by default as soon as any criterion is a timing metric. Every seed
+# runs both orders (baseline then candidate, and candidate then baseline),
+# each attempt starts from a new empty cache directory, and the schedule is
+# frozen in the plan. It doubles the measured attempts. Quality-only
+# comparisons do not get it unless you uncomment this block.
+# measurement:
+#   design: crossover       # `single` is cheaper and reported as exploratory only
+#   replicates: 1
+#   schedule_seed: 0        # seeds the run order only, never the workload
+#   cache:
+#     profile: cold         # `warm`: reset, then `warmup_runs` untimed runs per arm
+#   reset_hooks: []         # e.g. [{{id: flush-db, command: ./scripts/flush.sh}}]
 
 validity:
   activation: []          # e.g. [{{metric: num_trainable_params}}]: must differ between arms
@@ -499,6 +550,7 @@ def cmd_verify(args):
         text = (f"OK  {res.get('run_id', '')}  consistent: files, identities and the full comparison "
                 f"recomputed from the observations (verdict {res['verdict']}, digest "
                 f"{res['bundle_digest'][:12]}{', redacted derivative' if res.get('redacted') else ''}).\n"
+                f"Run order: {res.get('order_control', 'unknown')}.\n"
                 "This checks the record against itself. It does not show who ran it or that "
                 "the workload measured honestly, and it is not a reproduction.")
     else:

@@ -21,7 +21,8 @@ class LocalBackend(Backend):
 
     def plan(self) -> dict:
         return {"backend": "local", "isolation": "none (trusted code)",
-                "inherits_env": list(BASE_ENV) + list(self.execution["pass_env"])}
+                "inherits_env": list(BASE_ENV) + list(self.execution["pass_env"]),
+                "fresh_process_per_attempt": True}
 
     def placeholders(self, job: Job) -> dict:
         return {"repo": job.repo_dir, "env": job.env_dir, "output": job.output_dir,
@@ -33,7 +34,12 @@ class LocalBackend(Backend):
             if key in os.environ:
                 env[key] = os.environ[key]
         ph = self.placeholders(job)
+        env.update(job.host_env)
         env.update(job.env)
+        if job.cache_dir:
+            env["VALIDATE_CACHE_DIR"] = job.cache_dir
+            for name, sub in job.cache_layers.items():
+                env[name] = os.path.join(job.cache_dir, sub)
         env.update({"VALIDATE_REPO_DIR": ph["repo"], "VALIDATE_ENV_DIR": ph["env"],
                     "VALIDATE_OUTPUT_DIR": ph["output"], "VALIDATE_HARNESS_DIR": ph["harness"],
                     "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUNBUFFERED": "1"})

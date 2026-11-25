@@ -34,6 +34,8 @@
         "spec_hash": {"$ref": "#/$defs/sha256"},
         "plan_digest": {"$ref": "#/$defs/sha256"},
         "status": {"enum": ["COMPLETED", "FAILED", "TIMEOUT", "CANCELLED", "BUDGET_EXCEEDED", "PREFLIGHT_FAILED"]},
+        "protocol": {"type": "object"},
+        "schedule": {"type": "array", "items": {"type": "object"}},
         "attempts": {
           "type": "array",
           "items": {
@@ -44,7 +46,16 @@
               "arm": {"enum": ["baseline", "candidate"]},
               "seed": {"type": "integer"},
               "try": {"type": "integer", "minimum": 1},
-              "status": {"enum": ["ok", "failed", "timeout", "cancelled", "no_results", "invalid_results"]},
+              "status": {"enum": ["ok", "failed", "timeout", "cancelled", "no_results", "invalid_results", "reset_failed", "warmup_failed"]},
+              "replicate": {"type": "integer", "minimum": 0},
+              "sequence": {"enum": ["AB", "BA"]},
+              "period": {"enum": [1, 2]},
+              "block": {"type": "integer", "minimum": 0},
+              "planned_ordinal": {"type": "integer", "minimum": 1},
+              "ordinal": {"type": "integer", "minimum": 1},
+              "discarded": {"type": "boolean"},
+              "isolation": {"type": "object"},
+              "conditions": {"type": "object"},
               "exit_code": {"type": ["integer", "null"]},
               "duration_s": {"type": "number"}
             }

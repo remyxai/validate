@@ -16,8 +16,13 @@ MAX_LOG_READ = 8 * 1024 * 1024
 class Job:
     """One command to run for one arm.
 
-    ``phase`` is "setup", "preflight" or "run". Paths are host paths; a backend
-    maps them to wherever the workload sees them.
+    ``phase`` is "setup", "preflight", "reset", "warmup" or "run". Paths are
+    host paths; a backend maps them to wherever the workload sees them.
+
+    ``cache_dir`` is the attempt's own cache directory and ``cache_layers``
+    maps environment variables to subdirectories of it. ``host_env`` holds
+    variables whose values are host paths, which only a backend that shares
+    the host filesystem may pass on.
     """
     command: str
     phase: str
@@ -29,6 +34,9 @@ class Job:
     timeout_s: float
     log_path: str
     name: str = "job"
+    cache_dir: Optional[str] = None
+    cache_layers: dict = field(default_factory=dict)
+    host_env: dict = field(default_factory=dict)
     proc: Optional[subprocess.Popen] = field(default=None, repr=False)
     started: float = 0.0
     container: str = ""

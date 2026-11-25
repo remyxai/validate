@@ -7,8 +7,19 @@ from conftest import load_evidence
 
 @pytest.mark.parametrize("name", list(demo.SCENARIOS))
 def test_scenario_verdict(run_scenario, name):
-    summary, _ = run_scenario(name)
+    """As the demo ships it: every seed in both orders, empty caches."""
+    summary, _ = run_scenario(name, protocol=True)
     assert summary["verdict"] == demo.SCENARIOS[name]["expect"], summary["reasons"]
+    ev = load_evidence(summary)
+    assert ev["execution"]["protocol"]["design"] == "crossover"
+    assert all(a["isolation"]["fresh"] for a in ev["execution"]["attempts"])
+
+
+@pytest.mark.parametrize("name", ["guardrail", "positive", "missing", "drift", "inactive"])
+def test_scenario_verdict_without_the_protocol(run_scenario, name):
+    summary, _ = run_scenario(name, protocol=False)
+    assert summary["verdict"] == demo.SCENARIOS[name]["expect"], summary["reasons"]
+    assert load_evidence(summary)["execution"]["protocol"]["order_controlled"] is False
 
 
 def test_guardrail_veto_from_the_design_brief(run_scenario):

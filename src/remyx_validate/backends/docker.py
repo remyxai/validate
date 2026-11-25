@@ -35,7 +35,7 @@ class DockerBackend(Backend):
         return {"backend": "docker", "image": ex["image"], "network": ex["network"],
                 "limits": ex["limits"], "isolation": "experimental. container; harness read-only; "
                 "checkout and environment read-only during run; no host env; cap-drop ALL",
-                "inherits_env": list(ex["pass_env"])}
+                "inherits_env": list(ex["pass_env"]), "fresh_process_per_attempt": True}
 
     def preflight(self) -> list:
         if not shutil.which("docker"):
@@ -68,6 +68,8 @@ class DockerBackend(Backend):
                 "-w", ph["repo"]]
         if job.harness_dir:
             args += ["-v", f"{job.harness_dir}:{ph['harness']}:ro"]
+        if job.cache_dir:
+            args += ["-v", f"{job.cache_dir}:{WORK}/cache:rw"]
         limits = ex.get("limits") or {}
         if limits.get("cpus"):
             args += ["--cpus", str(limits["cpus"])]
@@ -83,6 +85,12 @@ class DockerBackend(Backend):
                     "VALIDATE_ENV_DIR": ph["env"], "VALIDATE_OUTPUT_DIR": ph["output"],
                     "VALIDATE_HARNESS_DIR": ph["harness"],
                     "PYTHONDONTWRITEBYTECODE": "1", "PYTHONUNBUFFERED": "1"})
+        if job.cache_dir:
+            # Host paths in job.host_env mean nothing in the container and are
+            # not passed. The cache layers are remapped onto the mount.
+            env["VALIDATE_CACHE_DIR"] = f"{WORK}/cache"
+            for name, sub in job.cache_layers.items():
+                env[name] = f"{WORK}/cache/{sub}"
         for key, value in sorted(env.items()):
             args += ["-e", f"{key}={value}"]
         command = self.render(job.command, ph)

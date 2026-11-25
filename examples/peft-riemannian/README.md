@@ -30,6 +30,9 @@ remyx-validate run
 remyx-validate report
 ```
 
+The plan lists 20 measured attempts: five seeds, both run orders, two arms.
+About seven minutes on a 4-core CPU once the environments are built.
+
 ## Adapting it to another PEFT draft PR
 
 ```bash
@@ -73,6 +76,56 @@ Verdict: `FAIL (target not met)`. On this task, at lr 2e-3 for 400 steps,
 the preconditioned optimizer ended at a higher loss on every seed. All
 validity checks passed, including the witness that the candidate arm used
 the preconditioned optimizer on every seed.
+
+### Does run order explain the throughput gap?
+
+That first run was recorded with 0.1.0a0. Each seed ran in one order and
+caches were not reset, so its report cannot say whether the slower arm was
+slower because of when it ran. Its declaration is inside the bundle.
+
+`impact.yaml` now runs the comparison the way Validate treats any timing
+metric by default: every seed runs AdamW then Riemannian and Riemannian then
+AdamW, and each of the 20 timed attempts starts in a new process with empty
+cache directories. `sample-evidence-crossover/` is the redacted export of
+that run (2026-11-25, same machine and packages, remyx-validate 0.1.0a1).
+
+```bash
+remyx-validate verify examples/peft-riemannian/sample-evidence-crossover   # from the repository root
+```
+
+| steps per second, Riemannian minus AdamW | value | 95% interval, 5 seeds |
+|---|---:|---|
+| both orders averaged | -295.4 | [-303.7, -287.0] |
+| AdamW first, Riemannian second | -293.3 | |
+| Riemannian first, AdamW second | -297.4 | |
+| difference between the two orders | +4.1 | [-6.9, 15.0] |
+| each arm measured when it ran first | -290.4 | |
+| each arm measured when it ran second | -300.3 | |
+
+AdamW averaged 836.9 steps/s and Riemannian 541.6. The declaration allowed
+the two orders to differ by 5% of baseline throughput (41.85 steps/s) and
+fixed that before the run. The measured difference is inside it: the
+candidate is about 295 steps/s slower whichever arm goes first, so run order
+does not account for the gap. The loss result is the same as before, since
+loss is deterministic per seed.
+[The report](sample-evidence-crossover/report.md) lists all 20 attempts in
+the order they ran, with the machine's load before each one.
+
+What this does and does not settle:
+
+- The interval for the order difference includes zero and reaches 15
+  steps/s, under 2% of baseline. An order effect that small cannot be ruled
+  out with five seeds. It is far too small to explain a 35% gap.
+- The 5% tolerance was our choice. It was written down before this run, but
+  we had already seen the size of the gap in the first one.
+- The runner emptied the cache directories it owns and started a new process
+  for every attempt. It did not clear the OS page cache or control CPU
+  frequency or other load on this shared machine. Running both orders
+  balances those effects; it does not remove them. The report lists them as
+  not controlled.
+- Throughput is an informational criterion here. Nothing was gated on it.
+
+See [Comparing latency and throughput](../../docs/MEASUREMENT.md).
 
 What this does not show: anything about other learning rates, real models or
 the paper's benchmarks. The paper's main claim is stability across learning

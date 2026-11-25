@@ -1,0 +1,1366 @@
+{
+  "change": {
+    "baseline": {
+      "ref": "3116c96b5d870851e8477eb99dfcf8471bac0e72",
+      "sha": "3116c96b5d870851e8477eb99dfcf8471bac0e72"
+    },
+    "candidate": {
+      "ref": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7",
+      "sha": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7"
+    },
+    "change_id": "chg_8795830f595b6b4e",
+    "family": "optimizer",
+    "hypothesis": "With identical init, data and step count, r x r preconditioning of the LoRA gradients reaches a lower eval loss than plain AdamW.",
+    "pr": "https://github.com/huggingface/peft/pull/3382",
+    "repo": "https://github.com/huggingface/peft"
+  },
+  "comparison": {
+    "criteria": [
+      {
+        "aggregate": "mean",
+        "all_pairs_identical": false,
+        "baseline": 0.004214194044470787,
+        "baseline_interval": [
+          0.0038607597314520843,
+          0.004567628357489491
+        ],
+        "candidate": 0.006573805026710034,
+        "candidate_interval": [
+          0.0057267302000876714,
+          0.007420879853332396
+        ],
+        "checks": [
+          {
+            "rule": "improve",
+            "state": "bad"
+          }
+        ],
+        "confidence": 0.95,
+        "coverage": {
+          "basis": "declared seeds x 2 measured run(s) per seed",
+          "complete_units": 5,
+          "expected": 10,
+          "incomplete_units": 0,
+          "matched": 10,
+          "missing_rate": 0.0
+        },
+        "delta": 0.0023596109822392464,
+        "delta_interval": [
+          0.0014891167764669718,
+          0.003230105188011521
+        ],
+        "direction": "lower",
+        "estimator": "paired_mean_difference_t",
+        "id": "final_eval_loss",
+        "improvement": -0.0023596109822392464,
+        "improvement_interval": [
+          -0.003230105188011521,
+          -0.0014891167764669718
+        ],
+        "metric": "final_eval_loss",
+        "missing_rate": 0.0,
+        "n_pairs": 5,
+        "notes": [],
+        "pairing": "seed",
+        "relative_delta": 0.5599198701671467,
+        "role": "target",
+        "slices": {},
+        "status": "not_met",
+        "unit": ""
+      },
+      {
+        "aggregate": "mean",
+        "all_pairs_identical": false,
+        "baseline": 836.9096333702104,
+        "baseline_interval": [
+          833.2588411078104,
+          840.5604256326103
+        ],
+        "candidate": 541.5513365237008,
+        "candidate_interval": [
+          534.0124859850475,
+          549.0901870623541
+        ],
+        "checks": [],
+        "confidence": 0.95,
+        "coverage": {
+          "basis": "declared seeds x 2 measured run(s) per seed",
+          "complete_units": 5,
+          "expected": 10,
+          "incomplete_units": 0,
+          "matched": 10,
+          "missing_rate": 0.0
+        },
+        "delta": -295.35829684650963,
+        "delta_interval": [
+          -303.66730694518856,
+          -287.0492867478307
+        ],
+        "direction": "higher",
+        "estimator": "paired_mean_difference_t",
+        "id": "throughput",
+        "improvement": -295.35829684650963,
+        "improvement_interval": [
+          -303.66730694518856,
+          -287.0492867478307
+        ],
+        "metric": "steps_per_s",
+        "missing_rate": 0.0,
+        "n_pairs": 5,
+        "notes": [],
+        "order": {
+          "definition": "AB is the baseline first and the candidate second; BA is the reverse. sensitivity = (candidate \u2212 baseline in AB) \u2212 (candidate \u2212 baseline in BA)",
+          "delta_ab": -293.31673157451064,
+          "delta_ab_interval": [
+            -306.1784048412859,
+            -280.4550583077354
+          ],
+          "delta_ba": -297.3998621185086,
+          "delta_ba_interval": [
+            -303.10321621731646,
+            -291.6965080197008
+          ],
+          "design": "crossover",
+          "drift_between_sequences": -3.4749586806811066,
+          "drift_interval": [
+            -12.168514581370838,
+            5.218597220008624
+          ],
+          "estimator": "unit_contrast_t",
+          "first_position_delta": -290.3859144130539,
+          "n_units": 5,
+          "replicates": 1,
+          "second_position_delta": -300.33067927996535,
+          "second_position_shift": 2.0415652719990134,
+          "sensitivity": 4.083130543998027,
+          "sensitivity_interval": [
+            -6.859592111517979,
+            15.025853199514032
+          ],
+          "state": "within_tolerance",
+          "tolerance": 41.84548166851052
+        },
+        "pairing": "seed",
+        "relative_delta": -0.35291539859221177,
+        "role": "info",
+        "slices": {},
+        "status": "info",
+        "unit": ""
+      }
+    ],
+    "inputs": {
+      "execution_status": "COMPLETED",
+      "integrity": [
+        {
+          "check": "harness_unchanged",
+          "code": "harness_modified",
+          "detail": "harness files match the approved plan",
+          "passed": true
+        },
+        {
+          "check": "declaration_unchanged",
+          "code": "declaration_modified",
+          "detail": "criteria match the approved plan",
+          "passed": true
+        },
+        {
+          "check": "checkout_pinned_baseline",
+          "code": "checkout_moved",
+          "detail": "baseline checkout is at the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_clean_baseline",
+          "code": "checkout_modified",
+          "detail": "baseline tracked files match the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_pinned_candidate",
+          "code": "checkout_moved",
+          "detail": "candidate checkout is at the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_clean_candidate",
+          "code": "checkout_modified",
+          "detail": "candidate tracked files match the approved commit",
+          "passed": true
+        }
+      ]
+    },
+    "limitations": [
+      "Self-reported local evidence: produced and checksummed on the machine that ran it. The checksums detect later edits; they do not prove who ran what. This is not a remote attestation.",
+      "Local subprocess backend: the workload ran with the user's file and network access and could have written its own results.",
+      "Independent unit is the seed; 5 seed(s) were run.",
+      "Run order: every seed ran both orders, baseline first and candidate first, on a schedule fixed before approval. That balances position effects that add the same amount to whichever arm runs second. It does not remove carryover that differs by arm, or drift that is not steady over the run.",
+      "Each seed was measured 2 time(s) per arm. Those runs are averaged within the independent unit and are not counted as extra units.",
+      "Caches: every measured attempt started from a new, empty directory for the cache locations listed in the execution protocol, in a new process. The OS page cache, hardware thermal and frequency state, GPU driver caches, remote services and other load on the machine were not controlled.",
+      "An offline comparison on the declared data. It does not predict a production outcome."
+    ],
+    "reasons": [
+      "target_not_met:final_eval_loss"
+    ],
+    "validity": {
+      "checks": [
+        {
+          "check": "harness_unchanged",
+          "code": "harness_modified",
+          "detail": "harness files match the approved plan",
+          "passed": true
+        },
+        {
+          "check": "declaration_unchanged",
+          "code": "declaration_modified",
+          "detail": "criteria match the approved plan",
+          "passed": true
+        },
+        {
+          "check": "checkout_pinned_baseline",
+          "code": "checkout_moved",
+          "detail": "baseline checkout is at the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_clean_baseline",
+          "code": "checkout_modified",
+          "detail": "baseline tracked files match the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_pinned_candidate",
+          "code": "checkout_moved",
+          "detail": "candidate checkout is at the approved commit",
+          "passed": true
+        },
+        {
+          "check": "checkout_clean_candidate",
+          "code": "checkout_modified",
+          "detail": "candidate tracked files match the approved commit",
+          "passed": true
+        },
+        {
+          "check": "held_constant",
+          "code": "control_drift",
+          "detail": "`num_trainable_params` is equal between arms on all 10 measured pair(s)",
+          "metric": "num_trainable_params",
+          "passed": true
+        },
+        {
+          "check": "held_constant",
+          "code": "control_drift",
+          "detail": "`train_steps` is equal between arms on all 10 measured pair(s)",
+          "metric": "train_steps",
+          "passed": true
+        },
+        {
+          "check": "held_constant",
+          "code": "control_drift",
+          "detail": "`initial_eval_loss` is equal between arms on all 10 measured pair(s)",
+          "metric": "initial_eval_loss",
+          "passed": true
+        },
+        {
+          "check": "activation",
+          "code": "inactive_treatment",
+          "detail": "witness `optimizer_preconditioned` differs between arms on all 10 measured pair(s)",
+          "metric": "optimizer_preconditioned",
+          "passed": true
+        }
+      ],
+      "status": "VALID"
+    },
+    "verdict": "FAIL"
+  },
+  "cost": {
+    "attempts_without_reported_cost": 20,
+    "cap_usd": null,
+    "note": "unknown: the harness reported no `cost_usd` metric",
+    "reported_usd": null
+  },
+  "declaration": {
+    "declaration_hash": "fb61ff0f9160c9a20697a894a5eb92639fccc00c73da6aceaf79f3970023e795",
+    "resolved": {
+      "arms": {
+        "baseline": {
+          "env": {
+            "OPTIMIZER": "adamw"
+          }
+        },
+        "candidate": {
+          "env": {
+            "OPTIMIZER": "riemannian"
+          }
+        }
+      },
+      "budget": {
+        "max_wall_s": 3600
+      },
+      "change": {
+        "baseline": {
+          "ref": "3116c96b5d870851e8477eb99dfcf8471bac0e72"
+        },
+        "candidate": {
+          "ref": "f90cc44e81dfbc9a91741f62b8d87d5d963843e7"
+        },
+        "family": "optimizer",
+        "hypothesis": "With identical init, data and step count, r x r preconditioning of the LoRA gradients reaches a lower eval loss than plain AdamW.",
+        "pr": "https://github.com/huggingface/peft/pull/3382",
+        "repo": "https://github.com/huggingface/peft"
+      },
+      "criteria": [
+        {
+          "aggregate": "mean",
+          "direction": "lower",
+          "id": "final_eval_loss",
+          "metric": "final_eval_loss",
+          "min_improvement": 0,
+          "relative": false,
+          "role": "target"
+        },
+        {
+          "aggregate": "mean",
+          "direction": "higher",
+          "id": "throughput",
+          "metric": "steps_per_s",
+          "order_tolerance": 0.05,
+          "performance": true,
+          "relative": true,
+          "role": "info"
+        }
+      ],
+      "data": {
+        "description": "Synthetic regression against a rank-4 perturbed two-layer MLP; generated from the seed, no external data.",
+        "identity": "synthetic-lora-teacher-student-v1"
+      },
+      "execution": {
+        "acknowledge_untrusted_network": false,
+        "backend": "local",
+        "image": "python:3.12-slim",
+        "limits": {},
+        "network": "full",
+        "pass_env": [],
+        "trust": "trusted"
+      },
+      "harness": {
+        "path": "./harness"
+      },
+      "measurement": {
+        "cache": {
+          "assets": "shared",
+          "isolate": [],
+          "profile": "cold",
+          "uncontrolled": []
+        },
+        "design": "crossover",
+        "replicates": 1,
+        "reset_hooks": [],
+        "schedule_seed": 0
+      },
+      "method": {
+        "confidence": 0.95,
+        "max_missing_rate": 0.0,
+        "seeds": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "uncertainty": "interval",
+        "unit": "seed"
+      },
+      "objective": "Decide whether the Riemannian-preconditioned optimizer trains LoRA to a lower loss than AdamW at the same step budget.",
+      "preflight": {
+        "command": "{env}/venv/bin/python {harness}/bench.py",
+        "timeout_s": 300
+      },
+      "run": {
+        "command": "{env}/venv/bin/python {harness}/bench.py",
+        "retries": 0,
+        "timeout_s": 900
+      },
+      "setup": [
+        "uv venv -q --python 3.12 {env}/venv",
+        "uv pip install -q --python {env}/venv/bin/python torch==2.15.0 --index-url https://download.pytorch.org/whl/cpu",
+        "uv pip install -q --python {env}/venv/bin/python -e . transformers==5.24.1 accelerate==1.16.0 numpy==2.5.5"
+      ],
+      "spec_version": "0.1",
+      "validity": {
+        "activation": [
+          {
+            "metric": "optimizer_preconditioned"
+          }
+        ],
+        "baseline_expect": [],
+        "held_constant": [
+          "num_trainable_params",
+          "train_steps",
+          "initial_eval_loss"
+        ]
+      }
+    }
+  },
+  "execution": {
+    "attempts": [
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s1_r0_AB_t1",
+        "block": 0,
+        "conditions": {
+          "after": {
+            "load_1m": 1.47
+          },
+          "before": {
+            "load_1m": 1.6
+          },
+          "started_s": 31.384
+        },
+        "duration_s": 15.843,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s1_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 1,
+        "period": 1,
+        "planned_ordinal": 1,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 1,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s1_r0_AB_t1",
+        "block": 0,
+        "conditions": {
+          "after": {
+            "load_1m": 1.41
+          },
+          "before": {
+            "load_1m": 1.47
+          },
+          "started_s": 49.845
+        },
+        "duration_s": 16.093,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s1_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 2,
+        "period": 2,
+        "planned_ordinal": 2,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 1,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s1_r0_BA_t1",
+        "block": 0,
+        "conditions": {
+          "after": {
+            "load_1m": 1.48
+          },
+          "before": {
+            "load_1m": 1.41
+          },
+          "started_s": 68.561
+        },
+        "duration_s": 16.093,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s1_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 3,
+        "period": 1,
+        "planned_ordinal": 3,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 1,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s1_r0_BA_t1",
+        "block": 0,
+        "conditions": {
+          "after": {
+            "load_1m": 1.41
+          },
+          "before": {
+            "load_1m": 1.52
+          },
+          "started_s": 87.261
+        },
+        "duration_s": 15.841,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s1_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 4,
+        "period": 2,
+        "planned_ordinal": 4,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 1,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s4_r0_BA_t1",
+        "block": 1,
+        "conditions": {
+          "after": {
+            "load_1m": 1.35
+          },
+          "before": {
+            "load_1m": 1.41
+          },
+          "started_s": 105.677
+        },
+        "duration_s": 16.047,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s4_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 5,
+        "period": 1,
+        "planned_ordinal": 5,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 4,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s4_r0_BA_t1",
+        "block": 1,
+        "conditions": {
+          "after": {
+            "load_1m": 1.25
+          },
+          "before": {
+            "load_1m": 1.35
+          },
+          "started_s": 124.321
+        },
+        "duration_s": 15.747,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s4_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 6,
+        "period": 2,
+        "planned_ordinal": 6,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 4,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s4_r0_AB_t1",
+        "block": 1,
+        "conditions": {
+          "after": {
+            "load_1m": 1.2
+          },
+          "before": {
+            "load_1m": 1.25
+          },
+          "started_s": 142.685
+        },
+        "duration_s": 15.801,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s4_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 7,
+        "period": 1,
+        "planned_ordinal": 7,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 4,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s4_r0_AB_t1",
+        "block": 1,
+        "conditions": {
+          "after": {
+            "load_1m": 1.26
+          },
+          "before": {
+            "load_1m": 1.2
+          },
+          "started_s": 161.072
+        },
+        "duration_s": 16.041,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s4_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 8,
+        "period": 2,
+        "planned_ordinal": 8,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 4,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s0_r0_AB_t1",
+        "block": 2,
+        "conditions": {
+          "after": {
+            "load_1m": 1.19
+          },
+          "before": {
+            "load_1m": 1.26
+          },
+          "started_s": 179.717
+        },
+        "duration_s": 15.792,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s0_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 9,
+        "period": 1,
+        "planned_ordinal": 9,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 0,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s0_r0_AB_t1",
+        "block": 2,
+        "conditions": {
+          "after": {
+            "load_1m": 1.15
+          },
+          "before": {
+            "load_1m": 1.19
+          },
+          "started_s": 198.073
+        },
+        "duration_s": 16.094,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s0_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 10,
+        "period": 2,
+        "planned_ordinal": 10,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 0,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s0_r0_BA_t1",
+        "block": 2,
+        "conditions": {
+          "after": {
+            "load_1m": 1.29
+          },
+          "before": {
+            "load_1m": 1.37
+          },
+          "started_s": 216.757
+        },
+        "duration_s": 16.041,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s0_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 11,
+        "period": 1,
+        "planned_ordinal": 11,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 0,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s0_r0_BA_t1",
+        "block": 2,
+        "conditions": {
+          "after": {
+            "load_1m": 1.35
+          },
+          "before": {
+            "load_1m": 1.29
+          },
+          "started_s": 235.413
+        },
+        "duration_s": 15.792,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s0_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 12,
+        "period": 2,
+        "planned_ordinal": 12,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 0,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s3_r0_BA_t1",
+        "block": 3,
+        "conditions": {
+          "after": {
+            "load_1m": 1.27
+          },
+          "before": {
+            "load_1m": 1.35
+          },
+          "started_s": 253.781
+        },
+        "duration_s": 16.141,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s3_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 13,
+        "period": 1,
+        "planned_ordinal": 13,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 3,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s3_r0_BA_t1",
+        "block": 3,
+        "conditions": {
+          "after": {
+            "load_1m": 1.26
+          },
+          "before": {
+            "load_1m": 1.33
+          },
+          "started_s": 272.525
+        },
+        "duration_s": 15.743,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s3_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 14,
+        "period": 2,
+        "planned_ordinal": 14,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 3,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s3_r0_AB_t1",
+        "block": 3,
+        "conditions": {
+          "after": {
+            "load_1m": 1.25
+          },
+          "before": {
+            "load_1m": 1.26
+          },
+          "started_s": 290.885
+        },
+        "duration_s": 15.795,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s3_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 15,
+        "period": 1,
+        "planned_ordinal": 15,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 3,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s3_r0_AB_t1",
+        "block": 3,
+        "conditions": {
+          "after": {
+            "load_1m": 1.18
+          },
+          "before": {
+            "load_1m": 1.25
+          },
+          "started_s": 309.269
+        },
+        "duration_s": 16.096,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s3_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 16,
+        "period": 2,
+        "planned_ordinal": 16,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 3,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s2_r0_BA_t1",
+        "block": 4,
+        "conditions": {
+          "after": {
+            "load_1m": 1.14
+          },
+          "before": {
+            "load_1m": 1.18
+          },
+          "started_s": 327.957
+        },
+        "duration_s": 16.143,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s2_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 17,
+        "period": 1,
+        "planned_ordinal": 17,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 2,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s2_r0_BA_t1",
+        "block": 4,
+        "conditions": {
+          "after": {
+            "load_1m": 1.28
+          },
+          "before": {
+            "load_1m": 1.37
+          },
+          "started_s": 346.713
+        },
+        "duration_s": 15.793,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s2_r0_BA_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 18,
+        "period": 2,
+        "planned_ordinal": 18,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 2,
+        "sequence": "BA",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "baseline",
+        "attempt_id": "att_baseline_s2_r0_AB_t1",
+        "block": 4,
+        "conditions": {
+          "after": {
+            "load_1m": 1.2
+          },
+          "before": {
+            "load_1m": 1.28
+          },
+          "started_s": 365.113
+        },
+        "duration_s": 15.791,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_baseline_s2_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 19,
+        "period": 1,
+        "planned_ordinal": 19,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 2,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      },
+      {
+        "arm": "candidate",
+        "attempt_id": "att_candidate_s2_r0_AB_t1",
+        "block": 4,
+        "conditions": {
+          "after": {
+            "load_1m": 1.16
+          },
+          "before": {
+            "load_1m": 1.2
+          },
+          "started_s": 383.486
+        },
+        "duration_s": 16.041,
+        "exit_code": 0,
+        "isolation": {
+          "cleanup": "removed",
+          "fresh": true,
+          "profile": "cold",
+          "reset_hooks": [],
+          "warmup": []
+        },
+        "log": "attempts/att_candidate_s2_r0_AB_t1/log.txt",
+        "n_observations": 7,
+        "ordinal": 20,
+        "period": 2,
+        "planned_ordinal": 20,
+        "replicate": 0,
+        "results_source": "results.json",
+        "seed": 2,
+        "sequence": "AB",
+        "status": "ok",
+        "try": 1
+      }
+    ],
+    "backend": {
+      "backend": "local",
+      "fresh_process_per_attempt": true,
+      "inherits_env": [
+        "PATH",
+        "HOME",
+        "LANG",
+        "LC_ALL",
+        "TMPDIR",
+        "USER",
+        "SHELL"
+      ],
+      "isolation": "none (trusted code)"
+    },
+    "detail": "",
+    "ended_at": "2026-11-25T03:35:14Z",
+    "env_keys": {
+      "baseline": "9645adf18fdeebd9ef8c459cc9a870bd3c012c47d18ca58c96efbf2983ba500d",
+      "candidate": "eb17ad078f9d7b9a953d73d179965f6fed0b3886fe77374b52b4a635bf7609c5"
+    },
+    "harness": {
+      "digest": "be85dd9fa89e6fc91c59688018724aacd2a905728f3d18099d734293374cf414",
+      "file_count": 1,
+      "path": "./harness"
+    },
+    "plan_digest": "99344d7f8c4c30763ed4bc91af3556ec4dfba76b7fc5ad130e7af4fa2232c013",
+    "protocol": {
+      "assets": "shared",
+      "attempts_per_seed": 4,
+      "cache_isolation": "per-attempt",
+      "cache_profile": "cold",
+      "concurrency": "one measured attempt at a time; arms never run side by side",
+      "declared_uncontrolled": [],
+      "design": "crossover",
+      "fresh_process_per_attempt": true,
+      "host": {
+        "cpu_count": 4,
+        "cpu_model": "Intel(R) Xeon(R) Platinum 8175M CPU @ 2.50GHz",
+        "gpus": [],
+        "machine": "x86_64",
+        "memory_bytes": 33165930496,
+        "python": "3.10.18",
+        "release": "5.15.0-1084-aws",
+        "system": "Linux"
+      },
+      "isolated_layers": [
+        "CUDA_CACHE_PATH",
+        "MPLCONFIGDIR",
+        "NUMBA_CACHE_DIR",
+        "TMPDIR",
+        "TORCHINDUCTOR_CACHE_DIR",
+        "TRITON_CACHE_DIR",
+        "XDG_CACHE_HOME"
+      ],
+      "not_controlled": [
+        "OS page cache and filesystem buffers",
+        "CPU and GPU thermal, frequency and power state",
+        "GPU driver, device and kernel-level caches",
+        "remote services and provider-side caches",
+        "other load on the same machine"
+      ],
+      "order_controlled": true,
+      "replicates": 1,
+      "reset_hooks": [],
+      "retry_policy": "a failed attempt restarts its whole sequence (both arms) from a fresh cache; superseded attempts are kept in the ledger and excluded from the comparison",
+      "schedule_seed": 0,
+      "shared_immutable_assets": {
+        "HF_HOME": "<HOME>/.cache/huggingface",
+        "TORCH_HOME": "<HOME>/.cache/torch"
+      },
+      "timing": "metrics are timed by the harness; `seconds` in the attempt table is the runner's wall time for the whole process and is not a metric",
+      "warmup_runs": 0
+    },
+    "run_id": "run_20261125T032831Z_157bd4",
+    "schedule": [
+      {
+        "arm": "baseline",
+        "block": 0,
+        "ordinal": 1,
+        "period": 1,
+        "replicate": 0,
+        "seed": 1,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 0,
+        "ordinal": 2,
+        "period": 2,
+        "replicate": 0,
+        "seed": 1,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 0,
+        "ordinal": 3,
+        "period": 1,
+        "replicate": 0,
+        "seed": 1,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 0,
+        "ordinal": 4,
+        "period": 2,
+        "replicate": 0,
+        "seed": 1,
+        "sequence": "BA"
+      },
+      {
+        "arm": "candidate",
+        "block": 1,
+        "ordinal": 5,
+        "period": 1,
+        "replicate": 0,
+        "seed": 4,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 1,
+        "ordinal": 6,
+        "period": 2,
+        "replicate": 0,
+        "seed": 4,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 1,
+        "ordinal": 7,
+        "period": 1,
+        "replicate": 0,
+        "seed": 4,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 1,
+        "ordinal": 8,
+        "period": 2,
+        "replicate": 0,
+        "seed": 4,
+        "sequence": "AB"
+      },
+      {
+        "arm": "baseline",
+        "block": 2,
+        "ordinal": 9,
+        "period": 1,
+        "replicate": 0,
+        "seed": 0,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 2,
+        "ordinal": 10,
+        "period": 2,
+        "replicate": 0,
+        "seed": 0,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 2,
+        "ordinal": 11,
+        "period": 1,
+        "replicate": 0,
+        "seed": 0,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 2,
+        "ordinal": 12,
+        "period": 2,
+        "replicate": 0,
+        "seed": 0,
+        "sequence": "BA"
+      },
+      {
+        "arm": "candidate",
+        "block": 3,
+        "ordinal": 13,
+        "period": 1,
+        "replicate": 0,
+        "seed": 3,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 3,
+        "ordinal": 14,
+        "period": 2,
+        "replicate": 0,
+        "seed": 3,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 3,
+        "ordinal": 15,
+        "period": 1,
+        "replicate": 0,
+        "seed": 3,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 3,
+        "ordinal": 16,
+        "period": 2,
+        "replicate": 0,
+        "seed": 3,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 4,
+        "ordinal": 17,
+        "period": 1,
+        "replicate": 0,
+        "seed": 2,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 4,
+        "ordinal": 18,
+        "period": 2,
+        "replicate": 0,
+        "seed": 2,
+        "sequence": "BA"
+      },
+      {
+        "arm": "baseline",
+        "block": 4,
+        "ordinal": 19,
+        "period": 1,
+        "replicate": 0,
+        "seed": 2,
+        "sequence": "AB"
+      },
+      {
+        "arm": "candidate",
+        "block": 4,
+        "ordinal": 20,
+        "period": 2,
+        "replicate": 0,
+        "seed": 2,
+        "sequence": "AB"
+      }
+    ],
+    "spec_hash": "83edc46af0c384115f6144728eaf752126f7bb2650064c585004dab6fa9e946c",
+    "started_at": "2026-11-25T03:28:31Z",
+    "status": "COMPLETED",
+    "wall_s": 402.386
+  },
+  "kind": "evidence",
+  "observations": {
+    "count": 140,
+    "path": "observations.jsonl",
+    "sha256": "a58c5091a50f3f983c81efb05f508c8c4a2733fcf71eb8246965e781427e5982"
+  },
+  "provenance": {
+    "approved_at": "2026-11-25T03:28:30Z",
+    "approved_by": "salma-remyx <<EMAIL>>",
+    "producer": {
+      "name": "remyx-validate",
+      "platform": "linux",
+      "python": "3.10.18",
+      "version": "0.1.0a1"
+    },
+    "trust_level": "self_reported_local"
+  },
+  "spec_version": "0.1"
+}

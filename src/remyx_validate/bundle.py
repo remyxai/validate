@@ -27,7 +27,7 @@ import sys
 import tarfile
 import tempfile
 
-from . import SPEC_VERSION, __version__, compare, declaration as decl, report
+from . import SPEC_VERSION, __version__, compare, declaration as decl, report, schedule
 from .canonical import canonical_json, digest, sha256_file, tree_digest
 
 EXCLUDED = ("status.json", "status.json.tmp", "checksums.json", "decisions.jsonl")
@@ -312,6 +312,12 @@ def _verify_dir(run_dir: str) -> dict:
         redo = compare.compare(resolved, observations, inputs.get("execution_status"),
                                inputs.get("integrity", []))
         result["verdict"] = recorded["verdict"]
+        protocol = evidence["execution"].get("protocol")
+        result["order_control"] = (
+            "none recorded: produced before measurement protocols existed, so run order and "
+            "cache state were not controlled" if protocol is None else
+            f"{protocol['design']}, order controlled" if protocol.get("order_controlled") else
+            f"{protocol['design']}, order not controlled")
         result["recomputed_verdict"] = redo["verdict"]
         if redo["verdict"] != recorded["verdict"]:
             problems.append(f"recorded verdict {recorded['verdict']} but the observations "
@@ -372,15 +378,58 @@ def _check_identities(problems, evidence, manifest, declared, resolved, observat
         if a["attempt_id"] in attempts:
             say(f"attempt id listed twice: {a['attempt_id']}")
         attempts[a["attempt_id"]] = a
-    ok_slots = [(a["arm"], a["seed"]) for a in attempts.values() if a["status"] == "ok"]
+    counted = [a for a in attempts.values() if a["status"] == "ok" and not a.get("discarded")]
+    ok_slots = [schedule.slot_key(a) for a in counted]
     if len(ok_slots) != len(set(ok_slots)):
         say("more than one successful attempt for the same arm and seed")
     for i, row in enumerate(observations):
         a = attempts.get(row["attempt_id"])
-        if a is None or a["status"] != "ok" or a["arm"] != row["arm"] or a["seed"] != row["seed"]:
-            say(f"observations.jsonl line {i + 1} does not belong to a successful attempt "
-                "with that arm and seed")
+        if (a is None or a["status"] != "ok" or a.get("discarded")
+                or schedule.slot_key(a) != schedule.slot_key(row)
+                or a.get("period") != row.get("period")):
+            say(f"observations.jsonl line {i + 1} does not belong to a counted, successful "
+                "attempt with that arm, seed and run order")
             break
+    _check_schedule(say, plan, ex, resolved, counted)
+
+
+def _check_schedule(say, plan, ex, resolved, counted):
+    """Under a measurement protocol the schedule is part of what was approved.
+    The record must carry that schedule, it must be the one the declaration
+    derives, and every counted attempt must be one of its slots."""
+    m = resolved.get("measurement")
+    if not m:
+        if plan.get("schedule") or ex.get("schedule"):
+            say("a run schedule is recorded but the declaration has no measurement protocol")
+        return
+    planned = decl.planned_schedule(resolved)
+    if plan.get("schedule") != planned or ex.get("schedule") != planned:
+        say("the run schedule does not match the one the declaration and scheduler seed give")
+        return
+    for problem in schedule.problems(planned, resolved["method"]["seeds"], m):
+        say(f"schedule: {problem}")
+    slots = {schedule.slot_key(s): s for s in planned}
+    for a in counted:
+        slot = slots.get(schedule.slot_key(a))
+        if slot is None or slot["period"] != a.get("period") or slot["ordinal"] != a.get("planned_ordinal"):
+            say(f"attempt {a['attempt_id']} is not a slot of the approved schedule")
+            return
+        iso = a.get("isolation") or {}
+        if not iso.get("fresh"):
+            say(f"attempt {a['attempt_id']} is counted but did not start from a clean cache")
+            return
+    if ex["status"] == "COMPLETED" and len(counted) != len(planned):
+        say("the run is recorded as completed but not every scheduled attempt was counted")
+    # A kept sequence ran its two arms back to back, in the planned order.
+    order = {a["attempt_id"]: i for i, a in enumerate(ex["attempts"])}
+    pairs = {}
+    for a in counted:
+        pairs.setdefault((a["seed"], a["replicate"], a["sequence"]), []).append(a)
+    for members in pairs.values():
+        members.sort(key=lambda a: a["period"])
+        if len(members) == 2 and order[members[1]["attempt_id"]] - order[members[0]["attempt_id"]] != 1:
+            say(f"the two arms of {members[0]['attempt_id'][4:]} did not run back to back")
+            return
 
 
 def _check_decisions(run_dir: str, evidence: dict) -> list:

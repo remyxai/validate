@@ -203,3 +203,47 @@ def paired_summary(baseline: Sequence[float], candidate: Sequence[float],
         f"percentile bootstrap, {BOOTSTRAP_RESAMPLES} paired resamples; tail "
         "quantiles from small samples are unstable")
     return out
+
+
+def contrast_summary(columns: Sequence[Sequence[float]], weights: Sequence[float],
+                     aggregate: str, confidence: float, rng_seed: int) -> dict:
+    """A weighted contrast of aggregates over columns measured on the same
+    independent units: ``sum(w * aggregate(column))``.
+
+    ``columns[k][i]`` belongs to unit ``i`` for every ``k``. Units are the
+    only thing resampled, with every column kept together, so repeated
+    measurements nested inside a unit never count as extra units.
+
+    For ``mean`` the contrast is the mean of per-unit contrasts and gets a
+    Student t interval. For other aggregates it gets a percentile bootstrap
+    over units when there are enough of them. Otherwise no interval.
+    """
+    n = len(columns[0]) if columns else 0
+    if any(len(col) != n for col in columns) or len(weights) != len(columns):
+        raise ValueError("columns must be the same length, one weight each")
+    agg = aggregate_fn(aggregate)
+    out = {"n_units": n, "estimate": None, "interval": None, "estimator": None}
+    if n == 0:
+        return out
+
+    def value(idx=None):
+        return math.fsum(w * agg(col if idx is None else [col[i] for i in idx])
+                         for w, col in zip(weights, columns))
+
+    if aggregate.lower() == "mean":
+        per_unit = [math.fsum(w * col[i] for w, col in zip(weights, columns)) for i in range(n)]
+        out["estimate"] = mean(per_unit)
+        out["estimator"] = "point" if n < 2 else "unit_contrast_t"
+        if n >= 2:
+            out["interval"] = list(t_interval(per_unit, confidence))
+        return out
+    out["estimate"] = value()
+    if n < MIN_BOOTSTRAP_UNITS:
+        out["estimator"] = "point"
+        return out
+    rng = random.Random(rng_seed)
+    draws = [value([rng.randrange(n) for _ in range(n)]) for _ in range(BOOTSTRAP_RESAMPLES)]
+    a = (1.0 - confidence) / 2.0
+    out["estimator"] = "unit_bootstrap_percentile"
+    out["interval"] = [quantile(draws, a), quantile(draws, 1 - a)]
+    return out
