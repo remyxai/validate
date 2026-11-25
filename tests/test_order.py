@@ -584,8 +584,10 @@ def probe(tmp_path):
         if not start:
             return path, shared
         summary = runmod.Runner(path).run()
-        with open(os.path.join(shared, "log")) as fh:
-            log = [line.split() for line in fh]
+        log = []
+        if os.path.exists(os.path.join(shared, "log")):   # absent when nothing ever ran
+            with open(os.path.join(shared, "log")) as fh:
+                log = [line.split() for line in fh]
         return summary, load_evidence(summary), plan, log, shared
 
     return _run
