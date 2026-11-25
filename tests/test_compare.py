@@ -7,7 +7,7 @@ from remyx_validate import compare, declaration as decl, demo
 
 
 def _decl(**method):
-    d = yaml.safe_load(demo.declaration_text("guardrail"))
+    d = yaml.safe_load(demo.declaration_text("guardrail", protocol=False))
     d["method"].update({"unit": "seed", "seeds": [0, 1, 2, 3, 4], **method})
     d["criteria"] = [{"id": "loss", "metric": "loss", "role": "target", "direction": "lower"}]
     d["data"] = {"identity": "hand-built"}

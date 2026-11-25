@@ -23,7 +23,7 @@ from typing import Any
 import jsonschema
 import yaml
 
-from . import SPEC_VERSION
+from . import SPEC_VERSION, schedule
 from .canonical import digest
 
 PLACEHOLDER = "TODO"
@@ -37,6 +37,28 @@ DEFAULTS = {
     "budget": {"max_wall_s": 14400},
     "validity": {"activation": [], "held_constant": [], "baseline_expect": []},
 }
+
+# Applied only when a declaration has a `measurement` block. A declaration
+# without one keeps exactly the document, and the hashes, it had before the
+# protocol existed.
+MEASUREMENT_DEFAULTS = {"design": "crossover", "replicates": 1, "schedule_seed": 0,
+                        "reset_hooks": []}
+CACHE_DEFAULTS = {"profile": "cold", "assets": "shared", "isolate": [], "uncontrolled": []}
+
+# A criterion that does not say whether it is a timing is read by its metric
+# name and unit. Timing criteria get the measurement protocol by default, so
+# the safe behaviour is the one you get without asking. `performance: false`
+# on the criterion opts out, in writing.
+TIMING_NAME = re.compile(
+    r"(latenc|throughput|duration|elapsed|runtime|wall|ttft|tpot|qps|rps|fps|speed"
+    r"|(^|_)time($|_)|_(ms|us|ns|s|sec|secs|seconds)$|per_(s|sec|second|min|minute)$)", re.I)
+TIMING_UNIT = re.compile(r"^(ms|us|µs|ns|s|sec|secs|seconds|min|minutes|h|hours)$|/(s|sec|second|min)$", re.I)
+INFERRED = "x-performance-inferred"
+
+
+def looks_like_timing(criterion: dict) -> bool:
+    return bool(TIMING_NAME.search(criterion.get("metric", ""))
+                or TIMING_UNIT.search(criterion.get("unit", "") or ""))
 
 
 class DeclarationError(Exception):
@@ -117,6 +139,24 @@ def normalize(raw: dict) -> dict:
             ex["network"] = "none" if ex["trust"] == "untrusted" else "setup-only"
     ex.setdefault("acknowledge_untrusted_network", False)
     for c in d.get("criteria", []):
+        if "performance" not in c and looks_like_timing(c):
+            c["performance"] = True
+            c[INFERRED] = True
+    if "measurement" not in d and any(c.get("performance") for c in d.get("criteria", [])):
+        d["measurement"] = {}
+    if "measurement" in d:
+        m = d["measurement"] = dict(d["measurement"] or {})
+        for key, value in MEASUREMENT_DEFAULTS.items():
+            m.setdefault(key, copy.deepcopy(value))
+        cache = m["cache"] = dict(m.get("cache") or {})
+        for key, value in CACHE_DEFAULTS.items():
+            cache.setdefault(key, copy.deepcopy(value))
+        if cache["profile"] == "warm":
+            cache.setdefault("warmup_runs", 1)
+        cache["isolate"] = sorted(cache["isolate"])
+        for hook in m["reset_hooks"]:
+            hook.setdefault("timeout_s", 60)
+    for c in d.get("criteria", []):
         c.setdefault("aggregate", "mean")
         c.setdefault("relative", False)
         if c["role"] == "target":
@@ -157,6 +197,7 @@ def semantic_problems(d: dict) -> list:
             out.append(f"criteria/{cid}: `min` {c['min']} is above `max` {c['max']}; no value can satisfy both")
     if PLACEHOLDER in d["run"]["command"]:
         out.append("run/command: still a template placeholder")
+    out += _measurement_problems(d)
     ex = d["execution"]
     if ex["trust"] == "review-required":
         out.append("execution/trust: you have not chosen how to run this code. Read the change "
@@ -187,7 +228,12 @@ def semantic_problems(d: dict) -> list:
         out.append("execution: the local backend cannot restrict network; use "
                    "`backend: docker` for `network: none` or `setup-only`")
     reserved = {"VALIDATE_ARM", "VALIDATE_SEED", "VALIDATE_OUTPUT_DIR",
-                "VALIDATE_HARNESS_DIR", "VALIDATE_ENV_DIR", "VALIDATE_REPO_DIR"}
+                "VALIDATE_HARNESS_DIR", "VALIDATE_ENV_DIR", "VALIDATE_REPO_DIR",
+                "VALIDATE_PHASE", "VALIDATE_REPLICATE", "VALIDATE_SEQUENCE",
+                "VALIDATE_PERIOD", "VALIDATE_CACHE_DIR"}
+    if d.get("measurement"):
+        from . import isolation
+        reserved |= set(isolation.layers(d["measurement"]))
     for arm, cfg in d["arms"].items():
         clash = reserved & set(cfg["env"])
         if clash:
@@ -196,6 +242,52 @@ def semantic_problems(d: dict) -> list:
             if any(p.search(value) for p in CREDENTIAL_SHAPES):
                 out.append(f"arms/{arm}/env/{key}: looks like a credential. Declarations are "
                            "hashed, stored and exported; pass secrets with `execution.pass_env`")
+    return out
+
+
+def _measurement_problems(d: dict) -> list:
+    out = []
+    m = d.get("measurement")
+    if m is None:
+        for c in d["criteria"]:
+            if "order_tolerance" in c and not c.get("performance"):
+                out.append(f"criteria/{c['id']}: `order_tolerance` only applies with "
+                           "`performance: true`")
+        return out
+    from . import isolation
+    cache = m["cache"]
+    for c in d["criteria"]:
+        cid = c["id"]
+        if "order_tolerance" in c and not c.get("performance"):
+            out.append(f"criteria/{cid}: `order_tolerance` only applies with `performance: true`")
+        if (c.get("performance") and c["role"] != "info" and m["design"] == "crossover"
+                and "order_tolerance" not in c):
+            why = (f"`{c['metric']}` looks like a timing metric, so it is compared in both "
+                   "run orders. D" if c.get(INFERRED) else "d")
+            out.append(f"criteria/{cid}: {why}eclare `order_tolerance`, the largest difference "
+                       "between the two run orders you would call unimportant. It is fixed "
+                       "before the run so it cannot be chosen after seeing the result"
+                       + (". If this metric is not a timing, set `performance: false`"
+                          if c.get(INFERRED) else ""))
+    if cache["profile"] == "cold" and "warmup_runs" in cache:
+        out.append("measurement/cache: `warmup_runs` only applies to `profile: warm`")
+    for name in cache["isolate"]:
+        if name in isolation.LAYERS:
+            out.append(f"measurement/cache/isolate: {name} is already isolated by the runner")
+        if name.startswith("VALIDATE_") or name in ("HOME", "PATH"):
+            out.append(f"measurement/cache/isolate: {name} cannot be redirected")
+    subdirs = ["app-" + n.lower() for n in cache["isolate"]]
+    if len(set(subdirs)) != len(subdirs):
+        out.append("measurement/cache/isolate: two names differ only by case")
+    ids = [h["id"] for h in m["reset_hooks"]]
+    for dup in sorted({i for i in ids if ids.count(i) > 1}):
+        out.append(f"measurement/reset_hooks: duplicate id {dup!r}")
+    for hook in m["reset_hooks"]:
+        if PLACEHOLDER in hook["command"]:
+            out.append(f"measurement/reset_hooks/{hook['id']}: still a template placeholder")
+    if d["execution"]["trust"] == "untrusted" and m["reset_hooks"]:
+        out.append("measurement/reset_hooks: reset hooks are trusted commands and cannot be "
+                   "combined with `trust: untrusted`")
     return out
 
 
@@ -215,14 +307,17 @@ def load(path: str) -> dict:
 # ── identities ────────────────────────────────────────────────────────────
 
 def declaration_hash(d: dict) -> str:
-    return digest({
+    body = {
         "spec_version": SPEC_VERSION,
         "objective": d.get("objective", ""),
         "criteria": sorted(d["criteria"], key=lambda c: c["id"]),
         "method": d["method"],
         "validity": d["validity"],
         "data": d.get("data", {}),
-    })
+    }
+    if d.get("measurement"):
+        body["measurement"] = d["measurement"]
+    return digest(body)
 
 
 def env_key(d: dict, arm: str, arm_sha: str, image_id=None) -> str:
@@ -243,7 +338,7 @@ def env_key(d: dict, arm: str, arm_sha: str, image_id=None) -> str:
 
 
 def spec_hash(d: dict, shas: dict, harness_digest) -> str:
-    return digest({
+    body = {
         "shas": shas,
         "harness": harness_digest,
         "setup": d["setup"],
@@ -253,7 +348,17 @@ def spec_hash(d: dict, shas: dict, harness_digest) -> str:
         "seeds": d["method"]["seeds"],
         "execution": d["execution"],
         "budget": d["budget"],
-    })
+    }
+    if d.get("measurement"):
+        body["measurement"] = d["measurement"]
+        body["schedule"] = planned_schedule(d)
+    return digest(body)
+
+
+def planned_schedule(d: dict):
+    """The frozen run schedule, or None for a declaration with no protocol."""
+    m = d.get("measurement")
+    return schedule.build(d["method"]["seeds"], m) if m else None
 
 
 def change_id(repo_identity: str, shas: dict, arms: dict) -> str:

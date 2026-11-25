@@ -1,4 +1,8 @@
 # Riemannian-preconditioned LoRA optimizer, huggingface/peft#3382.
+# Throughput is a timing, so every seed runs AdamW then Riemannian and
+# Riemannian then AdamW, each attempt from an empty cache directory. That is
+# the default for any timing criterion; the `measurement` block below only
+# spells it out.
 # Baseline: the commit the PR branched from, training LoRA with plain AdamW.
 # Candidate: the PR head, training the same LoRA with create_riemannian_optimizer(AdamW).
 spec_version: "0.1"
@@ -51,11 +55,22 @@ criteria:
     metric: steps_per_s
     role: info
     direction: higher
+    performance: true        # would be inferred from the name; stated for readers
+    relative: true
+    order_tolerance: 0.05    # the two run orders may differ by 5% of baseline
 
 validity:
   activation:
     - metric: optimizer_preconditioned
   held_constant: [num_trainable_params, train_steps, initial_eval_loss]
+
+# 5 seeds x 2 orders x 2 arms = 20 measured attempts.
+measurement:
+  design: crossover
+  replicates: 1
+  schedule_seed: 0         # orders the runs; never passed to the workload
+  cache:
+    profile: cold
 
 # Trusted on purpose: this PR is merged upstream and we read it. Make that
 # choice yourself for any other pull request.

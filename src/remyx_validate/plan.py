@@ -97,6 +97,34 @@ def build(decl_path: str) -> dict:
                         "harness reports. It is not a hard spending limit.")
     seeds = d["method"]["seeds"]
     tries = 1 + d["run"]["retries"]
+    m = d.get("measurement")
+    slots = decl.planned_schedule(d)
+    measured = len(slots) if m else 2 * len(seeds)
+    untimed = 0
+    for c in d["criteria"]:
+        if c.get(decl.INFERRED):
+            warnings.append(f"`{c['id']}` is treated as a timing metric because of its name or "
+                            "unit, so every seed runs in both orders. Set `performance: false` "
+                            "on it if that is wrong.")
+        elif c.get("performance") is False and decl.looks_like_timing(c):
+            warnings.append(f"`{c['id']}` looks like a timing metric and is declared "
+                            "`performance: false`: run order and cache state are not "
+                            "controlled for it.")
+    if m:
+        untimed = measured * m["cache"].get("warmup_runs", 0)
+        if m["design"] == "single":
+            warnings.append("`design: single` runs each seed in one order only. Performance "
+                            "criteria will be reported as exploratory, never as order-controlled.")
+        if m["cache"]["uncontrolled"]:
+            warnings.append("Declared shared state the runner cannot reset: "
+                            + ", ".join(m["cache"]["uncontrolled"])
+                            + ". Performance criteria will be reported as exploratory.")
+        if m["reset_hooks"]:
+            warnings.append("Reset hooks run before every measured attempt with the same access "
+                            "as the workload: " + ", ".join(h["id"] for h in m["reset_hooks"]))
+        if len(seeds) < 2 and d["method"]["unit"] == "seed":
+            warnings.append("One seed gives one independent unit: no interval can be computed "
+                            "for the treatment effect or the order effect.")
     plan = {
         "spec_version": SPEC_VERSION,
         "kind": "plan",
@@ -118,8 +146,8 @@ def build(decl_path: str) -> dict:
         "harness": harness,
         "declaration": d,
         "scope": {
-            "attempts_min": 2 * len(seeds),
-            "attempts_max": 2 * len(seeds) * tries,
+            "attempts_min": measured,
+            "attempts_max": measured * tries,
             "per_attempt_timeout_s": d["run"]["timeout_s"],
             "wall_cap_s": d["budget"]["max_wall_s"],
             "cost_cap_usd": d["budget"].get("max_cost_usd"),
@@ -136,6 +164,16 @@ def build(decl_path: str) -> dict:
             "outputs": ".validate/runs/<run_id>/ under the project directory; nothing is uploaded",
         },
     }
+    if m:
+        plan["schedule"] = slots
+        plan["scope"].update({
+            "untimed_warmup_runs_min": untimed,
+            "reset_hook_runs_min": measured * len(m["reset_hooks"]),
+            "attempts_note": (f"{measured} measured attempts: {len(seeds)} seed(s) x "
+                              f"{m['replicates']} replicate(s) x "
+                              + ("2 orders x 2 arms" if m["design"] == "crossover" else "2 arms")
+                              + ". A retry re-runs both arms of the affected sequence."),
+        })
     plan["plan_digest"] = digest(plan)
     return plan
 

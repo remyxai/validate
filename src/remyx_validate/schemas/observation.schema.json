@@ -8,6 +8,9 @@
   "properties": {
     "arm": {"enum": ["baseline", "candidate"]},
     "seed": {"type": "integer"},
+    "replicate": {"type": "integer", "minimum": 0, "description": "Independent repeat of the seed's block. Present only under a measurement protocol."},
+    "sequence": {"enum": ["AB", "BA"], "description": "Order the two arms ran in. A is baseline, B is candidate."},
+    "period": {"enum": [1, 2], "description": "Position of this arm within its sequence."},
     "unit": {"type": ["string", "null"], "description": "Independent sampling unit id. null marks a run-level value."},
     "slice": {"type": ["string", "null"]},
     "metric": {"type": "string"},

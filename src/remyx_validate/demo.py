@@ -127,6 +127,27 @@ if limit:
     queries = queries[:limit]
 
 ranker = Ranker(docs)
+
+# Order and cache fixtures. With DEMO_WARM_MS set, a process that finds state
+# left by an earlier one is "warm" and every query is that much faster.
+#   * a marker under $XDG_CACHE_HOME: a cache the runner isolates per attempt
+#   * DEMO_CARRY: a file outside it, standing in for a shared service that
+#     speeds up whichever arm runs second on the same seed
+warm_ms = float(os.environ.get("DEMO_WARM_MS", "0"))
+warm = False
+if warm_ms:
+    marker = os.path.join(os.environ.get("XDG_CACHE_HOME", out), "demo-index")
+    warm = os.path.exists(marker)
+    open(marker, "w").close()
+    carry = os.environ.get("DEMO_CARRY")
+    if carry:
+        me = os.environ["VALIDATE_ARM"] + ":" + os.environ["VALIDATE_SEED"]
+        other = ("candidate" if os.environ["VALIDATE_ARM"] == "baseline" else "baseline") \
+            + ":" + os.environ["VALIDATE_SEED"]
+        last = open(carry).read() if os.path.exists(carry) else ""
+        warm = warm or last == other
+        with open(carry, "w") as fh:
+            fh.write("spent" if last == other else me)
 fingerprint = int(hashlib.sha256(
     json.dumps(ranker.describe(), sort_keys=True).encode()).hexdigest()[:8], 16)
 
@@ -144,7 +165,8 @@ for q in queries:
             "resolved": int(top == q["gold"]),
             # Simulated: a fixed cost per operation plus per-query jitter that is
             # the same for both arms, so the pairing is exact.
-            "latency_ms": 120 + 0.25 * ops + (zlib.crc32(q["id"].encode()) % 61) - 30,
+            "latency_ms": 120 + 0.25 * ops + (zlib.crc32(q["id"].encode()) % 61) - 30
+            - (warm_ms if warm else 0),
             "cost_usd": ops * 2e-6,
         },
     })
@@ -197,6 +219,29 @@ SCENARIOS = {
         config={"weighting": "idf", "rerank_depth": 2}, fixture={"tamper": True},
         expect="INCOMPLETE",
         story="The candidate writes to the harness's query file during the run."),
+    # Run order and cache fixtures. All four use the shallow reranker under a
+    # crossover: baseline then candidate, and candidate then baseline.
+    "crossover": dict(
+        config={"weighting": "idf", "rerank_depth": 2}, expect="PASS",
+        env_both={"DEMO_WARM_MS": "40"}, measurement="cold",
+        story="Both run orders, each attempt from an empty cache: a warm cache cannot favour "
+              "whichever arm runs second."),
+    "warm": dict(
+        config={"weighting": "idf", "rerank_depth": 2}, expect="PASS",
+        env_both={"DEMO_WARM_MS": "40"}, measurement="warm",
+        story="Steady-state timing: each arm is warmed by its own untimed run before the "
+              "timed one."),
+    "carryover": dict(
+        config={"weighting": "idf", "rerank_depth": 2}, expect="NO_SIGNAL",
+        env_both={"DEMO_WARM_MS": "40", "DEMO_CARRY": "../../demo-carry.state"},
+        measurement="cold",
+        story="A shared service outside the runner's caches speeds up whichever arm runs "
+              "second. The two orders disagree, so the latency result is not trusted."),
+    "reset-hook": dict(
+        config={"weighting": "idf", "rerank_depth": 2}, expect="PASS",
+        env_both={"DEMO_WARM_MS": "40", "DEMO_CARRY": "../../demo-carry.state"},
+        measurement="cold", reset="rm -f ../../demo-carry.state",
+        story="The same shared service, reset by a declared hook before every attempt."),
 }
 
 DEFAULT_SCENARIO = "guardrail"
@@ -242,7 +287,9 @@ def _write_ranker(repo: str, config: dict, fixture: dict) -> None:
                            "fixture": json.dumps(fixture, sort_keys=True).replace("true", "True")})
 
 
-def declaration_text(scenario: str) -> str:
+def declaration_text(scenario: str, protocol: bool = True) -> str:
+    """`protocol=False` writes the declaration without run-order control, as
+    0.1.0a0 did: the latency criterion is marked `performance: false`."""
     sc = SCENARIOS[scenario]
     env_b = dict(sc.get("env_both", {}))
     env_c = {**env_b, **sc.get("env_candidate", {})}
@@ -251,6 +298,20 @@ def declaration_text(scenario: str) -> str:
 
     def env_block(env):
         return "{env: {" + ", ".join(f'{k}: "{v}"' for k, v in sorted(env.items())) + "}}"
+
+    measurement = ""
+    performance = ("\n            performance: false        # demo of the old behaviour: "
+                   "run order not controlled")
+    sc = dict(sc, measurement=sc.get("measurement", "cold")) if protocol else sc
+    if sc.get("measurement"):
+        performance = ("\n            performance: true         # run order and caches can move it"
+                       "\n            order_tolerance: 5        # ms between the two run orders")
+        hooks = (f"\n          reset_hooks:\n            - id: reset-shared-service\n"
+                 f"              command: {sc['reset']}" if sc.get("reset") else "")
+        warm = "\n            warmup_runs: 1" if sc["measurement"] == "warm" else ""
+        measurement = (f"\n        measurement:\n          design: crossover       # every seed runs AB and BA"
+                       f"\n          replicates: 1\n          schedule_seed: 7        # orders the runs, never the workload"
+                       f"\n          cache:\n            profile: {sc['measurement']}{warm}{hooks}")
 
     return textwrap.dedent(f"""\
         # Demo declaration, scenario: {scenario}
@@ -289,7 +350,7 @@ def declaration_text(scenario: str) -> str:
             direction: lower
             aggregate: p95
             unit: ms
-            max: 800                  # veto above 800 ms
+            max: 800                  # veto above 800 ms{performance}
           - id: cost_per_request
             metric: cost_usd
             role: info
@@ -298,7 +359,7 @@ def declaration_text(scenario: str) -> str:
         validity:
           activation:
             - metric: pipeline_fingerprint   # must differ between arms
-          held_constant: [dataset_size]
+          held_constant: [dataset_size]{measurement}
         execution:
           backend: local
           trust: trusted
@@ -312,7 +373,7 @@ def declaration_text(scenario: str) -> str:
         """)
 
 
-def create(dest: str, scenario: str = DEFAULT_SCENARIO) -> str:
+def create(dest: str, scenario: str = DEFAULT_SCENARIO, protocol: bool = True) -> str:
     """Build the demo project for one scenario. Returns the declaration path."""
     if scenario not in SCENARIOS:
         raise ValueError(f"unknown scenario {scenario!r}; choose from {', '.join(SCENARIOS)}")
@@ -351,7 +412,7 @@ def create(dest: str, scenario: str = DEFAULT_SCENARIO) -> str:
 
     path = os.path.join(dest, "impact.yaml")
     with open(path, "w", encoding="utf-8") as fh:
-        fh.write(declaration_text(scenario))
+        fh.write(declaration_text(scenario, protocol))
     with open(os.path.join(dest, ".gitignore"), "w", encoding="utf-8") as fh:
         fh.write(".validate/\n")
     return path

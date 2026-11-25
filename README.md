@@ -59,7 +59,7 @@ remyx-validate verify
 remyx-validate record --decision revise --reason "Latency over the declared limit"
 ```
 
-The report and machine-readable evidence are saved under `.validate/runs/`. Try `remyx-validate demo --all --dir validate-fixtures` to see examples of all five verdicts.
+The report and machine-readable evidence are saved under `.validate/runs/`. Try `remyx-validate demo --all --dir validate-fixtures` to see examples of all five verdicts, including the run-order and cache fixtures.
 
 ## Evaluate a change in your repository
 
@@ -167,6 +167,8 @@ The execution status tells you whether the run finished. Validity checks tell yo
 | `NO_SIGNAL` | The comparison cannot distinguish a useful signal (for example, the candidate behavior was never activated or a control drifted) |
 | `INCOMPLETE` | Execution or required measurement failed, or integrity checks failed |
 
+For latency and throughput, the order the two versions run in matters: a warm cache can give whichever runs second a head start. So for any timing criterion Validate runs every seed in both orders by default, starts each timed attempt in a new process with empty cache directories, and reports the change measured in each order next to the list of attempts in the order they ran. If the two orders disagree by more than the tolerance you declared, that criterion is not assessed. This controls run order and the caches the runner owns. It does not clear the OS page cache or control other load on the machine, and every report lists what was not controlled. See [Comparing latency and throughput](docs/MEASUREMENT.md).
+
 If the independent sampling unit is an example, results are paired by example ID. If it is a seed, results are paired by seed. With one paired unit there is no estimated interval. Cost and latency can be targets, guardrails or informational metrics. The offline result describes the chosen evaluation setup; measure the effect on live users separately.
 
 ## Example: PEFT optimizer comparison
@@ -183,6 +185,8 @@ Both versions train a LoRA adapter on a synthetic teacher-student task. We held 
 | Training throughput (steps/s) | 828.9 | 539.9 | -289.0 [-289.9, -288.1] |
 
 The candidate ended with a higher loss on every seed in this recorded run. The target was not met. Throughput was also lower. This is a small synthetic benchmark at one learning rate, not a reproduction of the paper's main results. The next comparison we'd run is a learning-rate sweep to examine stability across learning rates.
+
+The recorded run above is from the first release, which ran each seed in one order. A second recorded run repeats it the way Validate now treats timing metrics by default, with every seed in both orders and empty cache directories before each attempt. Throughput is lower by 295.4 steps/s [-303.7, -287.0] whichever version runs first. The two orders differ by 4.1 steps/s [-6.9, 15.0], inside the 5% tolerance declared beforehand. A small order effect cannot be ruled out with five seeds, and the OS page cache and machine load were not controlled. [Read that report](examples/peft-riemannian/sample-evidence-crossover/report.md).
 
 [Read the evidence report](examples/peft-riemannian/sample-evidence/report.md) · [Inspect the harness and reproduce the comparison](examples/peft-riemannian/)
 

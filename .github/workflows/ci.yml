@@ -51,7 +51,9 @@ jobs:
           remyx-validate export --public --output evidence.tar.gz
           remyx-validate verify evidence.tar.gz
       - name: Verify the recorded PEFT bundle
-        run: remyx-validate verify examples/peft-riemannian/sample-evidence
+        run: |
+          remyx-validate verify examples/peft-riemannian/sample-evidence
+          remyx-validate verify examples/peft-riemannian/sample-evidence-crossover
 
   wheel:
     runs-on: ubuntu-latest

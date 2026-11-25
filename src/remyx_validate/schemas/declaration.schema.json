@@ -318,6 +318,100 @@
           "description": "Number of distinct units the harness is expected to report. Lets coverage notice a unit missing from both arms."
         }
       }
+    },
+    "measurement": {
+      "type": "object",
+      "description": "Performance measurement protocol. Declaring it turns on a frozen run schedule and per-attempt cache isolation. Absent means the v0.1 behaviour: one pass per seed, order alternating by seed position, no cache reset.",
+      "additionalProperties": false,
+      "patternProperties": {
+        "^x-": {}
+      },
+      "properties": {
+        "design": {
+          "enum": [
+            "crossover",
+            "single"
+          ],
+          "description": "crossover: every seed and replicate runs both orders (AB and BA). single: one order per seed, exploratory only."
+        },
+        "replicates": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "schedule_seed": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Seeds the scheduler only. Independent of the workload seeds."
+        },
+        "cache": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "profile": {
+              "enum": [
+                "cold",
+                "warm"
+              ]
+            },
+            "warmup_runs": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10,
+              "description": "warm profile: untimed runs of the same command, per arm attempt, after the reset."
+            },
+            "assets": {
+              "enum": [
+                "shared",
+                "isolated"
+              ],
+              "description": "shared keeps already-downloaded immutable model assets visible. isolated hides them, for cold-start timing that includes the download."
+            },
+            "isolate": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "type": "string",
+                "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+              },
+              "description": "Extra environment variables naming application cache directories to isolate per attempt."
+            },
+            "uncontrolled": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": "Shared mutable state you know the runner cannot reset. Declaring any makes performance criteria exploratory."
+            }
+          }
+        },
+        "reset_hooks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "command"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_.-]+$"
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "timeout_s": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
     }
   },
   "$defs": {
@@ -417,6 +511,15 @@
             "example"
           ],
           "description": "Overrides method.unit for this criterion."
+        },
+        "performance": {
+          "type": "boolean",
+          "description": "A latency, throughput or other timing metric that run order and cache state can move. Requires a `measurement` block."
+        },
+        "order_tolerance": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Largest difference between the AB and BA treatment effects that is practically unimportant, in metric units (a fraction of the baseline when `relative` is true)."
         }
       }
     }
